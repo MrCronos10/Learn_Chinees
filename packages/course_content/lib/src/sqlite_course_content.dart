@@ -74,7 +74,7 @@ final class SqliteCourseContent implements CourseContentReader {
     final kind = row['kind'] as String;
     if (toneExerciseKinds.contains(kind)) {
       final syllable = row['syllable'] as String;
-      final tone = row['tone'] as int;
+      final tone = _toneOf(row);
       final recordings = _recordingsOf(syllable);
       return kind == exerciseKindToneMatching
           ? ToneMatchingExercise(
@@ -105,15 +105,19 @@ final class SqliteCourseContent implements CourseContentReader {
     };
   }
 
+  static Tone _toneOf(Row row) =>
+      Tone.fromNumber(row['tone'] as int) ??
+      (throw StateError('Tone ${row['tone']} in Course Content'));
+
   /// The Tone Recordings of [syllable], by tone.
-  Map<int, ToneRecording> _recordingsOf(String syllable) => {
+  Map<Tone, ToneRecording> _recordingsOf(String syllable) => {
     for (final row in _db.select(
       'SELECT tone, file FROM tone_recordings WHERE syllable = ?',
       [syllable],
     ))
-      row['tone'] as int: ToneRecording(
+      _toneOf(row): ToneRecording(
         syllable: syllable,
-        tone: row['tone'] as int,
+        tone: _toneOf(row),
         file: row['file'] as String,
       ),
   };

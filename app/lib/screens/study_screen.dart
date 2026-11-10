@@ -176,7 +176,7 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
                 ),
               },
               const Spacer(),
-              for (final (i, choice) in exercise.choices.indexed)
+              for (final choice in exercise.choices)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: switch (exercise) {
@@ -184,7 +184,7 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
                     final ToneMatchingExercise e => Row(
                       children: [
                         IconButton.filledTonal(
-                          tooltip: 'Play sound ${_soundNames[i]}',
+                          tooltip: 'Play ${e.labelFor(choice)}',
                           icon: const Icon(Icons.volume_up),
                           onPressed: () => widget.audio.playToneRecording(
                             e.recordingFor(choice),
@@ -194,14 +194,14 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => _answer(session, choice),
-                            child: Text('Sound ${_soundNames[i]}'),
+                            child: Text(e.labelFor(choice)),
                           ),
                         ),
                       ],
                     ),
                     _ => OutlinedButton(
                       onPressed: () => _answer(session, choice),
-                      child: Text(_choiceLabel(exercise, choice)),
+                      child: Text(exercise.labelFor(choice)),
                     ),
                   },
                 ),
@@ -210,11 +210,7 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
               const Spacer(),
               _FeedbackPanel(
                 feedback: feedback,
-                correctAnswer: switch (_answered) {
-                  final ToneExercise e =>
-                    '${e.tonedSyllable} (${_toneNames[e.tone - 1]})',
-                  _ => feedback.correctAnswer,
-                },
+                correctAnswer: _answered?.answerLabel ?? feedback.correctAnswer,
                 word: _answered?.word,
                 showPinyin: showPinyin,
               ),
@@ -230,15 +226,6 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
     );
   }
 }
-
-const _soundNames = ['A', 'B', 'C', 'D'];
-const _toneNames = ['1st tone', '2nd tone', '3rd tone', '4th tone'];
-
-/// How a choice is shown: tones by name, meanings as they are.
-String _choiceLabel(Exercise exercise, String choice) => switch (exercise) {
-  ToneExercise() => _toneNames[int.parse(choice) - 1],
-  _ => choice,
-};
 
 /// Plays a syllable's Tone Recording when shown and offers a replay.
 class _TonePrompt extends StatefulWidget {

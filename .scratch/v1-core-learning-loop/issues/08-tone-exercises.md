@@ -4,7 +4,7 @@
 
 **Blocked by:** 06, 07
 
-**Status:** ready-for-agent
+**Status:** ready-for-agent (built; one step left, blocked by 07: hear a real Tone Recording on the iOS simulator, then tick the last box and set done)
 
 - [x] Hear-a-syllable, pick-the-tone Exercise works
 - [x] See-a-toned-syllable, pick-the-sound Exercise works
@@ -22,4 +22,6 @@ As built:
 - Builder: `build_content <source.json> <word_ids.json> <out.db> [tone_recordings.json]`, list format as in `tone-recordings-plan.md`. Fails clearly on a missing recording, missing file, unacknowledged source, duplicate, tone outside 1–4 or a syllable that is not plain pinyin. Copies recordings into `tones/` next to the database as `<syllable><tone>.<ext>`; the folder is builder-owned. Matching choices are shuffled per Exercise, deterministically.
 - Schema: `exercises.word_id` is nullable, with new `syllable` and `tone` columns, plus a `tone_recordings` table. Course Content is replaced wholesale, so no migration is needed.
 - App: `AudioPlayer.playToneRecording` (device player uses `audioplayers` on bundled assets in `assets/content/tones/`); tone audio never goes through the speech engine. The fixture content has no tone Exercises until real recordings exist.
+
+2026-11-11, after code review: a `Tone` enum replaces bare 1–4 ints; Exercises give their own choice and answer labels (`labelFor`, `answerLabel`), so a wrong matching answer names the right sound ("Sound B (má)"). Syllables in the source and the Tone Recordings list must be plain pinyin (lowercase letters with a vowel, no tone mark, v for ü), which also stops a bad entry naming a file outside `tones/`. The build now copies recordings into a staging folder first, so a failed copy leaves the previous database and recordings in place.
 

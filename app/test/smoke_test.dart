@@ -12,11 +12,13 @@ const words = [
 ];
 
 /// Tone Recordings of "ma" in all four tones.
-const ma = {
-  1: ToneRecording(syllable: 'ma', tone: 1, file: 'ma1.mp3'),
-  2: ToneRecording(syllable: 'ma', tone: 2, file: 'ma2.mp3'),
-  3: ToneRecording(syllable: 'ma', tone: 3, file: 'ma3.mp3'),
-  4: ToneRecording(syllable: 'ma', tone: 4, file: 'ma4.mp3'),
+final maRecordings = {
+  for (final tone in Tone.values)
+    tone: ToneRecording(
+      syllable: 'ma',
+      tone: tone,
+      file: 'ma${tone.number}.mp3',
+    ),
 };
 
 const acknowledgements = [
@@ -46,11 +48,15 @@ StudyEngine fakeEngine([Clock? clock]) => StudyEngine(
       title: 'Listening',
       exercises: [
         ListeningExercise(word: words[0], choices: const ['goodbye', 'hello']),
-        ToneIdentificationExercise(syllable: 'ma', tone: 3, recordings: ma),
+        ToneIdentificationExercise(
+          syllable: 'ma',
+          tone: Tone.third,
+          recordings: maRecordings,
+        ),
         ToneMatchingExercise(
           syllable: 'ma',
-          tone: 2,
-          recordings: ma,
+          tone: Tone.second,
+          recordings: maRecordings,
           choices: const ['4', '2', '1', '3'],
         ),
       ],
@@ -224,8 +230,8 @@ void main() {
 
     // See a toned syllable, play the sounds, pick the matching one.
     expect(find.text('má'), findsOneWidget);
-    await tester.tap(find.byTooltip('Play sound A'));
-    await tester.tap(find.byTooltip('Play sound B'));
+    await tester.tap(find.byTooltip('Play Sound A'));
+    await tester.tap(find.byTooltip('Play Sound B'));
     expect(audio.playedRecordings, ['ma3.mp3', 'ma4.mp3', 'ma2.mp3']);
     await choose(tester, 'Sound B');
     expect(find.text('Correct!'), findsOneWidget);

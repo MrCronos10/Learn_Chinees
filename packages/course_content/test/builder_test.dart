@@ -427,7 +427,7 @@ void main() {
       final exercises = (await content.lesson('tones')).exercises;
 
       final hear = exercises[0] as ToneIdentificationExercise;
-      expect((hear.syllable, hear.tone), ('ma', 3));
+      expect((hear.syllable, hear.tone), ('ma', Tone.third));
       expect(hear.choices, ['1', '2', '3', '4']);
       expect(hear.recording.file, 'ma3.mp3');
 
@@ -493,11 +493,61 @@ void main() {
       source.writeAsStringSync(
         source.readAsStringSync().replaceFirst(
           '"syllable":"ma","tone":3',
-          '"syllable":"mm","tone":3',
+          '"syllable":"MA","tone":3',
         ),
       );
 
-      expect(() => buildTones(source, recordings()), failsWith(['"mm"']));
+      expect(
+        () => buildTones(source, recordings()),
+        failsWith(['"MA"', 'plain pinyin']),
+      );
+    });
+
+    test('the build fails when the Tone Recordings list has a syllable that '
+        'is not plain pinyin', () {
+      for (final bad in ['Mǎ', '../x']) {
+        final list = File(p.join(dir.path, 'bad_recordings.json'))
+          ..writeAsStringSync(
+            jsonEncode({
+              'recordings': [
+                {
+                  'syllable': bad,
+                  'tone': 1,
+                  'file': 'audio/ma1.mp3',
+                  'source': 'own-recordings',
+                },
+              ],
+            }),
+          );
+        recordings(); // writes the audio files
+
+        expect(
+          () => buildTones(toneSource(), list),
+          failsWith(['"$bad"', 'plain pinyin']),
+          reason: bad,
+        );
+      }
+    });
+
+    test('a failed copy of a Tone Recording leaves the previous build in '
+        'place', () async {
+      final list = recordings();
+      buildTones(toneSource(), list).close();
+      final unreadable = File(p.join(dir.path, 'audio', 'ma4.mp3'));
+      Process.runSync('chmod', ['000', unreadable.path]);
+      addTearDown(() => Process.runSync('chmod', ['644', unreadable.path]));
+      final renamed = toneSource();
+      renamed.writeAsStringSync(
+        renamed.readAsStringSync().replaceFirst('The four tones', 'Renamed'),
+      );
+
+      expect(() => buildTones(renamed, list), failsWith(['ma4.mp3']));
+
+      final out = p.join(dir.path, 'out');
+      expect(File(p.join(out, 'tones', 'ma4.mp3')).readAsStringSync(), 'ma4');
+      final content = SqliteCourseContent.open(p.join(out, 'course.db'));
+      addTearDown(content.close);
+      expect((await content.lessonPath()).single.title, 'The four tones');
     });
 
     test('the build fails when a tone is not 1 to 4', () {

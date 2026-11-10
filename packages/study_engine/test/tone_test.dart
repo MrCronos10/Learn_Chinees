@@ -4,12 +4,12 @@ import 'package:test/test.dart';
 import 'helpers.dart';
 
 /// The four Tone Recordings of [syllable], by tone.
-Map<int, ToneRecording> recordingsOf(String syllable) => {
-  for (var tone = 1; tone <= 4; tone++)
+Map<Tone, ToneRecording> recordingsOf(String syllable) => {
+  for (final tone in Tone.values)
     tone: ToneRecording(
       syllable: syllable,
       tone: tone,
-      file: '$syllable$tone.mp3',
+      file: '$syllable${tone.number}.mp3',
     ),
 };
 
@@ -20,38 +20,75 @@ StudyEngine engineWith(List<Lesson> lessons) => StudyEngine(
 );
 
 void main() {
+  group('Tone', () {
+    test('is numbered 1 to 4 and named for the Learner', () {
+      expect([for (final t in Tone.values) t.number], [1, 2, 3, 4]);
+      expect(Tone.third.label, '3rd tone');
+    });
+
+    test('is found by its number', () {
+      expect(Tone.fromNumber(2), Tone.second);
+      expect(Tone.fromNumber(0), isNull);
+      expect(Tone.fromNumber(5), isNull);
+    });
+  });
+
+  group('plain pinyin', () {
+    for (final syllable in ['ma', 'xie', 'lv', 'er', 'zhuang']) {
+      test('"$syllable" is plain pinyin', () {
+        expect(isPlainPinyin(syllable), isTrue);
+      });
+    }
+    for (final syllable in ['', 'MA', 'mā', 'm1a', 'mm', '../x', 'ma ']) {
+      test('"$syllable" is not plain pinyin', () {
+        expect(isPlainPinyin(syllable), isFalse);
+      });
+    }
+  });
+
   group('toned pinyin', () {
     for (final (syllable, tone, toned) in [
-      ('ma', 1, 'mā'),
-      ('ma', 2, 'má'),
-      ('ma', 3, 'mǎ'),
-      ('ma', 4, 'mà'),
-      ('hao', 3, 'hǎo'), // a takes the mark
-      ('xie', 4, 'xiè'), // e takes the mark
-      ('gou', 3, 'gǒu'), // o in ou takes the mark
-      ('gui', 4, 'guì'), // otherwise the last vowel
-      ('liu', 2, 'liú'),
-      ('ming', 2, 'míng'),
-      ('lv', 4, 'lǜ'), // v stands for ü
+      ('ma', Tone.first, 'mā'),
+      ('ma', Tone.second, 'má'),
+      ('ma', Tone.third, 'mǎ'),
+      ('ma', Tone.fourth, 'mà'),
+      ('hao', Tone.third, 'hǎo'), // a takes the mark
+      ('xie', Tone.fourth, 'xiè'), // e takes the mark
+      ('gou', Tone.third, 'gǒu'), // o in ou takes the mark
+      ('gui', Tone.fourth, 'guì'), // otherwise the last vowel
+      ('liu', Tone.second, 'liú'),
+      ('ming', Tone.second, 'míng'),
+      ('lv', Tone.fourth, 'lǜ'), // v stands for ü
     ]) {
-      test('$syllable tone $tone is written $toned', () {
+      test('$syllable ${tone.label} is written $toned', () {
         expect(tonedPinyin(syllable, tone), toned);
       });
     }
+
+    test('is refused for a syllable that is not plain pinyin', () {
+      expect(() => tonedPinyin('MA', Tone.first), throwsArgumentError);
+    });
   });
 
   group('hear a syllable, pick its tone', () {
     final exercise = ToneIdentificationExercise(
       syllable: 'ma',
-      tone: 3,
+      tone: Tone.third,
       recordings: recordingsOf('ma'),
     );
 
-    test('offers the four tones and plays the recording of the right one', () {
+    test('offers the four tones by name and plays the right recording', () {
       expect(exercise.choices, ['1', '2', '3', '4']);
+      expect(
+        [for (final c in exercise.choices) exercise.labelFor(c)],
+        ['1st tone', '2nd tone', '3rd tone', '4th tone'],
+      );
       expect(exercise.answer, '3');
       expect(exercise.recording.file, 'ma3.mp3');
-      expect(exercise.tonedSyllable, 'mǎ');
+    });
+
+    test('names the correct answer with its toned syllable', () {
+      expect(exercise.answerLabel, 'mǎ (3rd tone)');
     });
 
     test('is answered right by picking the tone', () async {
@@ -71,12 +108,12 @@ void main() {
   group('see a toned syllable, pick its sound', () {
     final exercise = ToneMatchingExercise(
       syllable: 'ma',
-      tone: 4,
+      tone: Tone.fourth,
       recordings: recordingsOf('ma'),
       choices: const ['2', '4', '1', '3'],
     );
 
-    test('offers the four sounds in the given order', () {
+    test('offers the four sounds in the given order, by letter', () {
       expect(exercise.tonedSyllable, 'mà');
       expect(
         [
@@ -85,7 +122,15 @@ void main() {
         ],
         ['ma2.mp3', 'ma4.mp3', 'ma1.mp3', 'ma3.mp3'],
       );
+      expect(
+        [for (final c in exercise.choices) exercise.labelFor(c)],
+        ['Sound A', 'Sound B', 'Sound C', 'Sound D'],
+      );
       expect(exercise.answer, '4');
+    });
+
+    test('names the correct answer by the sound the Learner saw', () {
+      expect(exercise.answerLabel, 'Sound B (mà)');
     });
 
     test('is answered right by picking the matching sound', () async {
@@ -95,6 +140,13 @@ void main() {
 
       expect(session.answer('4').correct, isTrue);
     });
+  });
+
+  test('a meaning Exercise shows its choices and answer as they are', () {
+    final exercise = lessonOf(1).exercises.single;
+
+    expect(exercise.labelFor('meaning 1'), 'meaning 1');
+    expect(exercise.answerLabel, 'meaning 1');
   });
 
   test('passing a Lesson with tone Exercises sends only its Words into '
@@ -109,7 +161,7 @@ void main() {
           exercises: [
             ToneIdentificationExercise(
               syllable: 'ma',
-              tone: 1,
+              tone: Tone.first,
               recordings: recordingsOf('ma'),
             ),
             ...words.exercises,

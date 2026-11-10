@@ -106,7 +106,7 @@ void buildCourseContent({
             wordId = null;
             choices = exercise.kind == exerciseKindToneMatching
                 ? _shuffledTones('${lesson.id}/$position')
-                : const ['1', '2', '3', '4'];
+                : _toneChoices;
           } else {
             final word = source.wordFor(exercise.word!, lesson.id);
             wordId = wordIds[word.characters];
@@ -122,7 +122,7 @@ void buildCourseContent({
               exercise.kind,
               wordId,
               exercise.syllable,
-              exercise.tone,
+              exercise.tone?.number,
               jsonEncode(choices),
             ],
           );
@@ -135,7 +135,7 @@ void buildCourseContent({
         'VALUES (?, ?, ?, ?)',
         [
           recording.syllable,
-          recording.tone,
+          recording.tone.number,
           recording.bundledName,
           recording.sourceId,
         ],
@@ -146,32 +146,60 @@ void buildCourseContent({
     db.close();
   }
 
+  final tones = Directory(p.join(p.dirname(outputPath), toneRecordingsFolder));
+  final Directory stagedTones;
+  try {
+    stagedTones = _stageRecordings(
+      recordings,
+      Directory('${tones.path}.building'),
+    );
+  } catch (_) {
+    staging.deleteSync();
+    rethrow;
+  }
+
+  // Everything is written; only now replace the previous build.
   registry.save();
+  if (tones.existsSync()) tones.deleteSync(recursive: true);
+  stagedTones.renameSync(tones.path);
   staging.renameSync(outputPath);
-  _bundleRecordings(recordings, p.dirname(outputPath));
 }
 
-/// Replaces the `tones` folder next to the database with the Tone
-/// Recordings, renamed `<syllable><tone>.<ext>`. The folder belongs to the
-/// builder; a README marks it as generated and keeps it in version control.
-void _bundleRecordings(List<_SourceRecording> recordings, String outputDir) {
-  final folder = Directory(p.join(outputDir, toneRecordingsFolder));
+/// Copies the Tone Recordings, renamed `<syllable><tone>.<ext>`, into
+/// [folder], ready to replace the `tones` folder next to the database. That
+/// folder belongs to the builder; a README marks it as generated and keeps
+/// it in version control. On failure nothing is left behind.
+Directory _stageRecordings(
+  List<_SourceRecording> recordings,
+  Directory folder,
+) {
   if (folder.existsSync()) folder.deleteSync(recursive: true);
   folder.createSync(recursive: true);
-  File(p.join(folder.path, 'README.md')).writeAsStringSync(
-    'Tone Recordings, written by the content builder. Do not edit: '
-    'change the Tone Recordings list and rebuild.\n',
-  );
-  for (final recording in recordings) {
-    recording.file.copySync(p.join(folder.path, recording.bundledName));
+  try {
+    File(p.join(folder.path, 'README.md')).writeAsStringSync(
+      'Tone Recordings, written by the content builder. Do not edit: '
+      'change the Tone Recordings list and rebuild.\n',
+    );
+    for (final recording in recordings) {
+      recording.file.copySync(p.join(folder.path, recording.bundledName));
+    }
+  } on FileSystemException catch (e) {
+    folder.deleteSync(recursive: true);
+    throw ContentBuildException(
+      'Cannot copy Tone Recording ${e.path}: ${e.message}',
+    );
   }
+  return folder;
 }
+
+/// The four tones as Exercise choices, in order.
+final _toneChoices = [for (final tone in Tone.values) tone.choice];
 
 /// The four tones in an order that depends only on [key], so a rebuild
 /// keeps it, while the matching sound's position does not give it away.
 List<String> _shuffledTones(String key) {
   final seed = key.codeUnits.fold(17, (h, c) => (h * 31 + c) & 0x7fffffff);
-  return ['1', '2', '3', '4']..shuffle(Random(seed));
+  return List.of(_toneChoices)..shuffle(Random(seed));
 }
 
 final class _SourceWord {
@@ -200,7 +228,7 @@ final class _SourceExercise {
 
   /// The syllable and tone a tone Exercise asks about.
   final String? syllable;
-  final int? tone;
+  final Tone? tone;
 
   bool get isToneExercise => toneExerciseKinds.contains(kind);
 }
@@ -210,7 +238,7 @@ final class _SourceRecording {
   _SourceRecording(this.syllable, this.tone, this.file, this.sourceId);
 
   final String syllable;
-  final int tone;
+  final Tone tone;
 
   /// The audio file, resolved against the list's folder.
   final File file;
@@ -219,28 +247,27 @@ final class _SourceRecording {
   final String sourceId;
 
   /// Its name once bundled with the app.
-  String get bundledName => '$syllable$tone${p.extension(file.path)}';
+  String get bundledName => '$syllable${tone.number}${p.extension(file.path)}';
+
+  /// How error messages name it.
+  String get description => 'Tone Recording of "$syllable" tone ${tone.number}';
 
   static List<_SourceRecording> parseList(File list) {
     final root = jsonDecode(list.readAsStringSync());
     final recordings = [
       for (final r in _Source._list(root, 'recordings'))
         _SourceRecording(
-          _Source._string(r, 'syllable'),
+          _Source._syllable(r),
           _Source._tone(r),
           File(p.join(list.parent.path, _Source._string(r, 'file'))),
           _Source._string(r, 'source'),
         ),
     ];
-    _Source._requireUnique(
-      recordings.map((r) => '"${r.syllable}" tone ${r.tone}'),
-      'Tone Recording of',
-    );
+    _Source._requireUnique(recordings.map((r) => r.description), 'Entry');
     for (final r in recordings) {
       if (!r.file.existsSync()) {
         throw ContentBuildException(
-          'Tone Recording of "${r.syllable}" tone ${r.tone}: file '
-          '${r.file.path} does not exist',
+          '${r.description}: file ${r.file.path} does not exist',
         );
       }
     }
@@ -334,17 +361,7 @@ final class _Source {
   static _SourceExercise _exercise(Object? e) {
     final kind = _string(e, 'kind');
     if (toneExerciseKinds.contains(kind)) {
-      final syllable = _string(e, 'syllable');
-      final tone = _tone(e);
-      try {
-        tonedPinyin(syllable, tone);
-      } on ArgumentError {
-        throw ContentBuildException(
-          'Tone Exercise syllable "$syllable" is not plain pinyin (letters '
-          'with a vowel, no tone mark, v for ü)',
-        );
-      }
-      return _SourceExercise(kind, syllable: syllable, tone: tone);
+      return _SourceExercise(kind, syllable: _syllable(e), tone: _tone(e));
     }
     if (wordExerciseKinds.contains(kind)) {
       return _SourceExercise(kind, word: _string(e, 'word'));
@@ -354,12 +371,26 @@ final class _Source {
     );
   }
 
-  /// A tone, 1 to 4.
-  static int _tone(Object? map) {
+  /// A tone, written 1 to 4.
+  static Tone _tone(Object? map) {
     final value = (map as Map)['tone'];
-    if (value is! int || value < 1 || value > 4) {
+    final tone = value is int ? Tone.fromNumber(value) : null;
+    if (tone == null) {
       throw ContentBuildException(
         '"tone" must be 1, 2, 3 or 4 in ${jsonEncode(map)}',
+      );
+    }
+    return tone;
+  }
+
+  /// A syllable in plain pinyin; it also names a bundled file, so nothing
+  /// else (no path, no capitals, no tone marks) gets through.
+  static String _syllable(Object? map) {
+    final value = _string(map, 'syllable');
+    if (!isPlainPinyin(value)) {
+      throw ContentBuildException(
+        'Syllable "$value" is not plain pinyin (lowercase letters with a '
+        'vowel, no tone mark, v for ü) in ${jsonEncode(map)}',
       );
     }
     return value;
@@ -419,8 +450,8 @@ final class _Source {
     for (final r in recordings) {
       if (!acknowledged.contains(r.sourceId)) {
         throw ContentBuildException(
-          'Tone Recording of "${r.syllable}" tone ${r.tone} comes from source '
-          '"${r.sourceId}", which has no Acknowledgement. Add it to '
+          '${r.description} comes from source "${r.sourceId}", which has no '
+          'Acknowledgement. Add it to '
           '"acknowledgements" with its name, author, license and url.',
         );
       }
@@ -429,11 +460,12 @@ final class _Source {
     for (final lesson in units.expand((u) => u.lessons)) {
       for (final exercise in lesson.exercises.where((e) => e.isToneExercise)) {
         final syllable = exercise.syllable!;
-        for (var tone = 1; tone <= 4; tone++) {
+        for (final tone in Tone.values) {
           if (!recorded.contains((syllable, tone))) {
             throw ContentBuildException(
               'Lesson "${lesson.id}" has a tone Exercise on "$syllable", but '
-              'there is no Tone Recording of "$syllable" tone $tone. Add it '
+              'there is no Tone Recording of "$syllable" tone ${tone.number}. '
+              'Add it '
               'to the Tone Recordings list.',
             );
           }
