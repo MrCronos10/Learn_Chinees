@@ -37,7 +37,19 @@ class _LessonScreenState extends State<LessonScreen> {
     }
     if (_finishing) return;
     _finishing = true;
-    final result = await session.finish();
+    final LessonResult result;
+    try {
+      result = await session.finish();
+    } catch (error) {
+      _finishing = false;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save your result. Try again. ($error)'),
+        ),
+      );
+      return;
+    }
     if (!mounted) return;
     setState(() => _result = result);
   }

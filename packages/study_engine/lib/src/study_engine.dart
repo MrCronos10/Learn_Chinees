@@ -50,30 +50,44 @@ final class StudyEngine {
   final LearnerProgressStore _progress;
   final Clock _clock;
 
-  /// Every Lesson in path order with its state. Passed Lessons are passed;
-  /// the first Lesson not yet passed is unlocked; the rest are locked.
+  /// Every Lesson in path order with its state. Passed Lessons are passed.
+  /// The Lesson right after the last Passed Lesson is unlocked; so is the
+  /// first Lesson not yet passed, which only differs when a content update
+  /// inserted a Lesson behind the Learner. Everything else is locked.
   Future<List<PathLesson>> lessonPath() async {
     final lessons = await _content.lessonPath();
     final passed = await _progress.passedLessonIds();
-    var unlockedOne = false;
-    final path = <PathLesson>[];
-    for (final lesson in lessons) {
-      final LessonState state;
-      if (passed.contains(lesson.id)) {
-        state = LessonState.passed;
-      } else if (!unlockedOne) {
-        state = LessonState.unlocked;
-        unlockedOne = true;
-      } else {
-        state = LessonState.locked;
-      }
-      path.add(PathLesson(id: lesson.id, title: lesson.title, state: state));
-    }
-    return path;
+    final firstNotPassed = lessons.indexWhere((l) => !passed.contains(l.id));
+    final afterLastPassed =
+        lessons.lastIndexWhere((l) => passed.contains(l.id)) + 1;
+    return [
+      for (final (i, lesson) in lessons.indexed)
+        PathLesson(
+          id: lesson.id,
+          title: lesson.title,
+          state: passed.contains(lesson.id)
+              ? LessonState.passed
+              : (i == firstNotPassed || i == afterLastPassed)
+              ? LessonState.unlocked
+              : LessonState.locked,
+        ),
+    ];
   }
 
-  /// Starts a Lesson. Nothing is recorded until the session is finished.
+  /// Starts an unlocked or passed Lesson on the path. Nothing is recorded
+  /// until the session is finished, so quitting midway leaves Learner
+  /// Progress unchanged.
   Future<LessonSession> startLesson(String lessonId) async {
+    final state = [
+      for (final l in await lessonPath())
+        if (l.id == lessonId) l.state,
+    ];
+    if (state.isEmpty) {
+      throw StateError('Lesson "$lessonId" is not on the Lesson path');
+    }
+    if (state.single == LessonState.locked) {
+      throw StateError('Lesson "$lessonId" is locked');
+    }
     final lesson = await _content.lesson(lessonId);
     if (lesson.exercises.isEmpty) {
       throw StateError('Lesson "$lessonId" has no Exercises');

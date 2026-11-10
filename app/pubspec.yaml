@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   course_content:
     path: ../packages/course_content
+  learner_progress:
+    path: ../packages/learner_progress
   path: ^1.9.0
   path_provider: ^2.1.5
   study_engine:

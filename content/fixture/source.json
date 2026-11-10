@@ -8,17 +8,66 @@
           "id": "fixture-lesson-1",
           "title": "Saying hello",
           "exercises": [
-            { "kind": "multipleChoice", "word": "你好" },
-            { "kind": "multipleChoice", "word": "谢谢" },
-            { "kind": "multipleChoice", "word": "再见" }
+            {
+              "kind": "multipleChoice",
+              "word": "你好"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "谢谢"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "再见"
+            }
+          ]
+        },
+        {
+          "id": "fixture-lesson-2",
+          "title": "Me and you",
+          "exercises": [
+            {
+              "kind": "multipleChoice",
+              "word": "我"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "你"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "谢谢"
+            }
           ]
         }
       ]
     }
   ],
   "words": [
-    { "characters": "你好", "pinyin": "nǐ hǎo", "meaning": "hello" },
-    { "characters": "谢谢", "pinyin": "xièxie", "meaning": "thank you" },
-    { "characters": "再见", "pinyin": "zàijiàn", "meaning": "goodbye" }
+    {
+      "characters": "你好",
+      "pinyin": "nǐ hǎo",
+      "meaning": "hello"
+    },
+    {
+      "characters": "谢谢",
+      "pinyin": "xièxie",
+      "meaning": "thank you"
+    },
+    {
+      "characters": "再见",
+      "pinyin": "zàijiàn",
+      "meaning": "goodbye"
+    },
+    {
+      "characters": "我",
+      "pinyin": "wǒ",
+      "meaning": "I, me"
+    },
+    {
+      "characters": "你",
+      "pinyin": "nǐ",
+      "meaning": "you"
+    }
   ]
 }

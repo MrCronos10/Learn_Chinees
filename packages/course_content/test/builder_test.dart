@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:course_content/course_content.dart';
+import 'package:learner_progress/learner_progress.dart';
 import 'package:path/path.dart' as p;
 import 'package:study_engine/study_engine.dart';
 import 'package:test/test.dart';
@@ -154,5 +155,72 @@ void main() {
 
     expect(result.passed, isTrue);
     expect(result.firstTryPercent, 100);
+  });
+
+  test('a removed Word\'s ID is retired and never reused', () async {
+    Future<Map<String, int>> idsIn(SqliteCourseContent content) async {
+      final lesson = await content.lesson('fixture-lesson-1');
+      return {
+        for (final e in lesson.exercises.cast<MultipleChoiceExercise>())
+          e.word.characters: e.word.id,
+      };
+    }
+
+    final before = await idsIn(build(fixture, 'first.db'));
+    // Replace 再见 with a new Word in both the Word list and the Lesson.
+    final changed = File(p.join(dir.path, 'changed.json'))
+      ..writeAsStringSync(
+        File(fixture)
+            .readAsStringSync()
+            .replaceAll('再见', '早上好')
+            .replaceFirst('zàijiàn', 'zǎoshang hǎo')
+            .replaceFirst('goodbye', 'good morning'),
+      );
+    final after = await idsIn(build(changed.path, 'second.db'));
+
+    expect(after['你好'], before['你好']);
+    expect(after['谢谢'], before['谢谢']);
+    expect(before.values, isNot(contains(after['早上好'])));
+  });
+
+  test('Learner Progress survives replacing the Course Content database '
+      'with a rebuilt one', () async {
+    final progressPath = p.join(dir.path, 'learner_progress.db');
+    final contentPath = p.join(dir.path, 'course.db');
+    final clock = FixedClock(const Day(2026, 11, 10));
+
+    buildCourseContent(
+      sourcePath: fixture,
+      registryPath: registry,
+      outputPath: contentPath,
+    );
+    var content = SqliteCourseContent.open(contentPath);
+    var progress = SqliteLearnerProgressStore.open(progressPath);
+    var engine = StudyEngine(
+      content: content,
+      progress: progress,
+      clock: clock,
+    );
+    final session = await engine.startLesson('fixture-lesson-1');
+    for (var e = session.current; e != null; e = session.current) {
+      session.answer(e.answer);
+    }
+    await session.finish();
+    content.close();
+    progress.close();
+
+    // An app update ships a rebuilt Course Content database over the old one.
+    buildCourseContent(
+      sourcePath: fixture,
+      registryPath: registry,
+      outputPath: contentPath,
+    );
+    content = SqliteCourseContent.open(contentPath);
+    progress = SqliteLearnerProgressStore.open(progressPath);
+    addTearDown(content.close);
+    addTearDown(progress.close);
+    engine = StudyEngine(content: content, progress: progress, clock: clock);
+
+    expect((await engine.lessonPath()).single.state, LessonState.passed);
   });
 }

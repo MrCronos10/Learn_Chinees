@@ -1,6 +1,8 @@
 import 'package:study_engine/study_engine.dart';
 import 'package:test/test.dart';
 
+import 'progress_backends.dart';
+
 /// A Lesson of [count] multiple-choice Exercises, one per Word.
 Lesson lessonOf(int count, {String id = 'lesson-1'}) => Lesson(
   id: id,
@@ -19,11 +21,20 @@ Lesson lessonOf(int count, {String id = 'lesson-1'}) => Lesson(
   ],
 );
 
-StudyEngine engineWith(List<Lesson> lessons) => StudyEngine(
+late ProgressBackend backend;
+
+StudyEngine engineWith(
+  List<Lesson> lessons, {
+  LearnerProgressStore? progress,
+}) => StudyEngine(
   content: InMemoryCourseContent(lessons),
-  progress: InMemoryLearnerProgressStore(),
+  progress: progress ?? backend.store,
   clock: FixedClock(const Day(2026, 11, 10)),
 );
+
+List<LessonState> states(List<PathLesson> path) => [
+  for (final lesson in path) lesson.state,
+];
 
 /// Answers the first [wrongCount] first-try Exercises wrong and the rest right;
 /// repeated Exercises are then answered right.
@@ -47,6 +58,19 @@ Future<LessonResult> play(LessonSession session, {int wrongCount = 0}) {
 }
 
 void main() {
+  for (final b in progressBackends) {
+    group('with ${b.name} Learner Progress:', () {
+      setUp(() {
+        backend = b;
+        b.setUp();
+      });
+      tearDown(b.tearDown);
+      lessonSuite();
+    });
+  }
+}
+
+void lessonSuite() {
   test('answering every Exercise right is a Passed Lesson at 100%', () async {
     final engine = engineWith([lessonOf(5)]);
 
@@ -81,6 +105,119 @@ void main() {
       await play(await engine.startLesson('lesson-1'), wrongCount: 2);
 
       expect((await engine.lessonPath()).single.state, LessonState.unlocked);
+    });
+
+    final threeLessons = [
+      lessonOf(5, id: 'a'),
+      lessonOf(5, id: 'b'),
+      lessonOf(5, id: 'c'),
+    ];
+
+    test('unlocks only the first Lesson on first launch', () async {
+      final engine = engineWith(threeLessons);
+
+      expect(states(await engine.lessonPath()), [
+        LessonState.unlocked,
+        LessonState.locked,
+        LessonState.locked,
+      ]);
+    });
+
+    test('passing a Lesson unlocks the next one only', () async {
+      final engine = engineWith(threeLessons);
+
+      await play(await engine.startLesson('a'));
+
+      expect(states(await engine.lessonPath()), [
+        LessonState.passed,
+        LessonState.unlocked,
+        LessonState.locked,
+      ]);
+    });
+
+    test('failing a Lesson leaves the next one locked', () async {
+      final engine = engineWith(threeLessons);
+
+      await play(await engine.startLesson('a'), wrongCount: 2);
+
+      expect(states(await engine.lessonPath()), [
+        LessonState.unlocked,
+        LessonState.locked,
+        LessonState.locked,
+      ]);
+    });
+
+    test('a locked Lesson cannot be started', () async {
+      final engine = engineWith(threeLessons);
+
+      expect(engine.startLesson('b'), throwsStateError);
+    });
+
+    test('a Lesson that is not on the path cannot be started', () async {
+      final engine = StudyEngine(
+        content: _PathOmits('b', InMemoryCourseContent(threeLessons)),
+        progress: backend.store,
+        clock: FixedClock(const Day(2026, 11, 10)),
+      );
+      await play(await engine.startLesson('a'));
+
+      expect(engine.startLesson('b'), throwsStateError);
+    });
+
+    test('a Lesson inserted by a content update before the Learner\'s '
+        'position is unlocked, and the next Lesson stays unlocked', () async {
+      final before = engineWith(threeLessons);
+      await play(await before.startLesson('a'));
+      await play(await before.startLesson('b'));
+
+      // An update inserts Lesson x between a and b.
+      final after = engineWith([
+        threeLessons[0],
+        lessonOf(5, id: 'x'),
+        threeLessons[1],
+        threeLessons[2],
+      ]);
+
+      expect(states(await after.lessonPath()), [
+        LessonState.passed,
+        LessonState.unlocked,
+        LessonState.passed,
+        LessonState.unlocked,
+      ]);
+    });
+
+    test(
+      'quitting a Lesson midway leaves Learner Progress unchanged',
+      () async {
+        final engine = engineWith(threeLessons);
+        await play(await engine.startLesson('a'));
+        final before = states(await engine.lessonPath());
+
+        // Answer most of Lesson b right, then walk away without finishing.
+        final session = await engine.startLesson('b');
+        for (var i = 0; i < 4; i++) {
+          session.answer(session.current!.answer);
+        }
+        final reopened = engineWith(threeLessons, progress: backend.restart());
+
+        expect(states(await reopened.lessonPath()), before);
+      },
+    );
+
+    test('Learner Progress survives an app restart', () async {
+      if (!backend.persistent) {
+        return markTestSkipped('in-memory progress does not outlive the app');
+      }
+      final engine = engineWith(threeLessons);
+      await play(await engine.startLesson('a'));
+
+      final reopened = engineWith(threeLessons, progress: backend.restart());
+
+      expect(states(await reopened.lessonPath()), [
+        LessonState.passed,
+        LessonState.unlocked,
+        LessonState.locked,
+      ]);
     });
   });
 
@@ -182,4 +319,22 @@ void main() {
       },
     );
   });
+}
+
+/// Course Content whose Lesson path leaves out one Lesson that can still be
+/// loaded by id.
+final class _PathOmits implements CourseContentReader {
+  _PathOmits(this._omitted, this._inner);
+
+  final String _omitted;
+  final CourseContentReader _inner;
+
+  @override
+  Future<List<LessonSummary>> lessonPath() async => [
+    for (final l in await _inner.lessonPath())
+      if (l.id != _omitted) l,
+  ];
+
+  @override
+  Future<Lesson> lesson(String lessonId) => _inner.lesson(lessonId);
 }
