@@ -152,6 +152,16 @@ final class StudyEngine {
     ];
   }
 
+  /// Whether Exercises show pinyin with the characters.
+  Future<bool> showPinyin() => _progress.showPinyin();
+
+  /// Saves the pinyin setting in Learner Progress.
+  Future<void> setShowPinyin(bool show) => _progress.setShowPinyin(show);
+
+  /// Credits and licenses for every third-party source in the Course Content.
+  Future<List<Acknowledgement>> acknowledgements() =>
+      _content.acknowledgements();
+
   /// Total XP the Learner has earned.
   Future<int> totalXp() => _progress.totalXp();
 

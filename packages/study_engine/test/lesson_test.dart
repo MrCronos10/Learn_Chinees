@@ -303,4 +303,7 @@ final class _PathOmits implements CourseContentReader {
   @override
   Future<Map<int, Exercise>> reviewExercises(Set<int> wordIds) =>
       _inner.reviewExercises(wordIds);
+
+  @override
+  Future<List<Acknowledgement>> acknowledgements() => _inner.acknowledgements();
 }

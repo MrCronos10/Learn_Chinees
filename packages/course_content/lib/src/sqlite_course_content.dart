@@ -87,5 +87,18 @@ final class SqliteCourseContent implements CourseContentReader {
     };
   }
 
+  @override
+  Future<List<Acknowledgement>> acknowledgements() async => [
+    for (final row in _db.select(
+      'SELECT name, author, license, url FROM acknowledgements ORDER BY position',
+    ))
+      Acknowledgement(
+        name: row['name'] as String,
+        author: row['author'] as String,
+        license: row['license'] as String,
+        url: row['url'] as String,
+      ),
+  ];
+
   void close() => _db.close();
 }

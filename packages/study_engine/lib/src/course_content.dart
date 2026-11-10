@@ -79,6 +79,22 @@ final class Lesson {
   final List<Exercise> exercises;
 }
 
+/// The credit and license notice for one third-party source used in the
+/// Course Content.
+final class Acknowledgement {
+  const Acknowledgement({
+    required this.name,
+    required this.author,
+    required this.license,
+    required this.url,
+  });
+
+  final String name;
+  final String author;
+  final String license;
+  final String url;
+}
+
 /// Reads the read-only Course Content.
 abstract interface class CourseContentReader {
   /// Every Lesson in path order.
@@ -91,4 +107,7 @@ abstract interface class CourseContentReader {
   /// Lesson path that studies that Word. IDs no longer in the Course Content
   /// (retired Words) are left out.
   Future<Map<int, Exercise>> reviewExercises(Set<int> wordIds);
+
+  /// Every third-party source used in the Course Content, with its license.
+  Future<List<Acknowledgement>> acknowledgements();
 }

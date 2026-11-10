@@ -57,4 +57,9 @@ abstract interface class LearnerProgressStore {
 
   /// The schedule of every Word in Review, by Word ID.
   Future<Map<int, WordSchedule>> wordSchedules();
+
+  /// Whether Exercises show pinyin with characters (default true).
+  Future<bool> showPinyin();
+
+  Future<void> setShowPinyin(bool show);
 }

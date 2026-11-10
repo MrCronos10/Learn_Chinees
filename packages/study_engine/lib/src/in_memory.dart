@@ -5,9 +5,18 @@ import 'scheduler.dart';
 
 /// Course Content held in memory, for tests and fakes.
 final class InMemoryCourseContent implements CourseContentReader {
-  InMemoryCourseContent(List<Lesson> lessons) : _lessons = List.of(lessons);
+  InMemoryCourseContent(
+    List<Lesson> lessons, {
+    List<Acknowledgement> acknowledgements = const [],
+  }) : _lessons = List.of(lessons),
+       _acknowledgements = List.of(acknowledgements);
 
   final List<Lesson> _lessons;
+  final List<Acknowledgement> _acknowledgements;
+
+  @override
+  Future<List<Acknowledgement>> acknowledgements() async =>
+      List.of(_acknowledgements);
 
   @override
   Future<List<LessonSummary>> lessonPath() async => [
@@ -40,6 +49,13 @@ final class InMemoryLearnerProgressStore implements LearnerProgressStore {
   final List<FinishedLesson> _lessons = [];
   final List<FinishedReview> _reviews = [];
   final Map<int, WordSchedule> _schedules = {};
+  bool _showPinyin = true;
+
+  @override
+  Future<bool> showPinyin() async => _showPinyin;
+
+  @override
+  Future<void> setShowPinyin(bool show) async => _showPinyin = show;
 
   @override
   Future<void> recordLessonFinished(FinishedLesson lesson) async {

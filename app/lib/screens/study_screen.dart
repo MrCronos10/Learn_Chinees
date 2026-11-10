@@ -10,12 +10,16 @@ class StudyScreen<R> extends StatefulWidget {
   const StudyScreen({
     super.key,
     required this.audio,
+    required this.showPinyin,
     required this.start,
     required this.results,
     this.what = 'Lesson',
   });
 
   final AudioPlayer audio;
+
+  /// Whether Words show pinyin with their characters (a Learner setting).
+  final Future<bool> Function() showPinyin;
 
   /// Starts a fresh session (again on "Try again").
   final Future<StudySession<R>> Function() start;
@@ -33,6 +37,7 @@ class StudyScreen<R> extends StatefulWidget {
 
 class _StudyScreenState<R> extends State<StudyScreen<R>> {
   late Future<StudySession<R>> _session = widget.start();
+  late final Future<bool> _showPinyin = widget.showPinyin();
   AnswerFeedback? _feedback;
   R? _result;
   bool _finishing = false;
@@ -91,9 +96,10 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
       return widget.results(result, _again, () => Navigator.of(context).pop());
     }
     return FutureBuilder(
-      future: _session,
+      future: Future.wait([_session, _showPinyin]),
       builder: (context, snapshot) {
-        final session = snapshot.data;
+        final session = snapshot.data?[0] as StudySession<R>?;
+        final showPinyin = snapshot.data?[1] as bool? ?? true;
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
@@ -112,14 +118,17 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
               child: Text('Could not load ${widget.what}: $error'),
             ),
             (null, _) => const Center(child: CircularProgressIndicator()),
-            (final StudySession<R> session, _) => _exerciseView(session),
+            (final StudySession<R> session, _) => _exerciseView(
+              session,
+              showPinyin: showPinyin,
+            ),
           },
         );
       },
     );
   }
 
-  Widget _exerciseView(StudySession<R> session) {
+  Widget _exerciseView(StudySession<R> session, {required bool showPinyin}) {
     final feedback = _feedback;
     // Once answered, the session has already moved on, so only the feedback
     // panel is shown until the Learner continues.
@@ -136,7 +145,7 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
                   children: [
                     const Text('What does this mean?'),
                     const SizedBox(height: 24),
-                    _WordCard(word: word),
+                    _WordCard(word: word, showPinyin: showPinyin),
                   ],
                 ),
                 ListeningExercise(:final word) => _ListeningPrompt(
@@ -225,9 +234,10 @@ class _ListeningPromptState extends State<_ListeningPrompt> {
 }
 
 class _WordCard extends StatelessWidget {
-  const _WordCard({required this.word});
+  const _WordCard({required this.word, required this.showPinyin});
 
   final Word word;
+  final bool showPinyin;
 
   @override
   Widget build(BuildContext context) {
@@ -235,8 +245,10 @@ class _WordCard extends StatelessWidget {
     return Column(
       children: [
         Text(word.characters, style: text.displayMedium),
-        const SizedBox(height: 8),
-        Text(word.pinyin, style: text.titleLarge),
+        if (showPinyin) ...[
+          const SizedBox(height: 8),
+          Text(word.pinyin, style: text.titleLarge),
+        ],
       ],
     );
   }

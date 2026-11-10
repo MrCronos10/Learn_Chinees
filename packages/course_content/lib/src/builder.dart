@@ -55,10 +55,24 @@ void buildCourseContent({
   try {
     db.execute(createSchemaSql);
     db.execute('BEGIN');
+    for (final (position, a) in source.acknowledgements.indexed) {
+      db.execute(
+        'INSERT INTO acknowledgements '
+        '(id, position, name, author, license, url) VALUES (?, ?, ?, ?, ?, ?)',
+        [a.id, position, a.name, a.author, a.license, a.url],
+      );
+    }
     for (final word in source.words) {
       db.execute(
-        'INSERT INTO words (id, characters, pinyin, meaning) VALUES (?, ?, ?, ?)',
-        [wordIds[word.characters], word.characters, word.pinyin, word.meaning],
+        'INSERT INTO words (id, characters, pinyin, meaning, source_id) '
+        'VALUES (?, ?, ?, ?, ?)',
+        [
+          wordIds[word.characters],
+          word.characters,
+          word.pinyin,
+          word.meaning,
+          word.sourceId,
+        ],
       );
     }
     var lessonPosition = 0;
@@ -99,11 +113,15 @@ void buildCourseContent({
 }
 
 final class _SourceWord {
-  _SourceWord(this.characters, this.pinyin, this.meaning);
+  _SourceWord(this.characters, this.pinyin, this.meaning, this.sourceId);
 
   final String characters;
   final String pinyin;
   final String meaning;
+
+  /// The third-party source this Word comes from, if not original; it must
+  /// have an Acknowledgement.
+  final String? sourceId;
 
   /// Identity in the Word ID registry: the characters alone (they are unique
   /// in the source), so correcting pinyin or meaning keeps the Word ID.
@@ -133,11 +151,28 @@ final class _SourceUnit {
   final List<_SourceLesson> lessons;
 }
 
+final class _SourceAcknowledgement {
+  _SourceAcknowledgement(
+    this.id,
+    this.name,
+    this.author,
+    this.license,
+    this.url,
+  );
+
+  final String id;
+  final String name;
+  final String author;
+  final String license;
+  final String url;
+}
+
 final class _Source {
-  _Source(this.units, this.words);
+  _Source(this.units, this.words, this.acknowledgements);
 
   final List<_SourceUnit> units;
   final List<_SourceWord> words;
+  final List<_SourceAcknowledgement> acknowledgements;
 
   static _Source parse(String json) {
     final root = jsonDecode(json) as Map<String, Object?>;
@@ -147,7 +182,19 @@ final class _Source {
           _string(w, 'characters'),
           _string(w, 'pinyin'),
           _string(w, 'meaning'),
+          _optionalString(w, 'source'),
         ),
+    ];
+    final acknowledgements = [
+      if ((root as Map).containsKey('acknowledgements'))
+        for (final a in _list(root, 'acknowledgements'))
+          _SourceAcknowledgement(
+            _string(a, 'id'),
+            _string(a, 'name'),
+            _string(a, 'author'),
+            _string(a, 'license'),
+            _string(a, 'url'),
+          ),
     ];
     final units = [
       for (final u in _list(root, 'units'))
@@ -159,7 +206,7 @@ final class _Source {
             ]),
         ]),
     ];
-    final source = _Source(units, words);
+    final source = _Source(units, words, acknowledgements);
     source._validate();
     return source;
   }
@@ -172,6 +219,9 @@ final class _Source {
     return value;
   }
 
+  static String? _optionalString(Object? map, String key) =>
+      (map as Map).containsKey(key) ? _string(map, key) : null;
+
   static List<Object?> _list(Object? map, String key) {
     final value = (map as Map)[key];
     if (value is! List) {
@@ -182,6 +232,18 @@ final class _Source {
 
   void _validate() {
     _requireUnique(words.map((w) => w.characters), 'Word');
+    _requireUnique(acknowledgements.map((a) => a.id), 'Acknowledgement id');
+    final acknowledged = {for (final a in acknowledgements) a.id};
+    for (final word in words) {
+      final sourceId = word.sourceId;
+      if (sourceId != null && !acknowledged.contains(sourceId)) {
+        throw ContentBuildException(
+          'Word "${word.characters}" comes from source "$sourceId", which has '
+          'no Acknowledgement. Add it to "acknowledgements" with its name, '
+          'author, license and url.',
+        );
+      }
+    }
     _requireUnique(units.map((u) => u.id), 'Unit id');
     _requireUnique(
       units.expand((u) => u.lessons).map((l) => l.id),

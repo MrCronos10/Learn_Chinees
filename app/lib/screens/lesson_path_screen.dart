@@ -4,6 +4,7 @@ import 'package:study_engine/study_engine.dart';
 import '../audio/audio_player.dart';
 
 import 'results_screen.dart';
+import 'settings_screen.dart';
 import 'study_screen.dart';
 
 /// Home: the Lesson path.
@@ -66,6 +67,7 @@ class _LessonPathScreenState extends State<LessonPathScreen>
   void _open(PathLesson lesson) => _study(
     StudyScreen<LessonResult>(
       audio: widget.audio,
+      showPinyin: widget.engine.showPinyin,
       start: () => widget.engine.startLesson(lesson.id),
       results: (result, again, done) =>
           ResultsScreen(result: result, onTryAgain: again, onDone: done),
@@ -75,6 +77,7 @@ class _LessonPathScreenState extends State<LessonPathScreen>
   void _review() => _study(
     StudyScreen<ReviewResult>(
       audio: widget.audio,
+      showPinyin: widget.engine.showPinyin,
       what: 'Review',
       start: () async =>
           await widget.engine.startReview() ??
@@ -87,7 +90,20 @@ class _LessonPathScreenState extends State<LessonPathScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lessons')),
+      appBar: AppBar(
+        title: const Text('Lessons'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SettingsScreen(engine: widget.engine),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

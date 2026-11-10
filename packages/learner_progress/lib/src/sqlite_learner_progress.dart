@@ -3,7 +3,7 @@ import 'package:study_engine/study_engine.dart';
 
 /// Schema version stored in SQLite's `user_version`; bump with a migration
 /// whenever the schema changes, because this database is never replaced.
-const _schemaVersion = 3;
+const _schemaVersion = 4;
 
 /// Learner Progress persisted in its own SQLite database, separate from
 /// Course Content and never replaced by an app update (ADR-0001). Refers to
@@ -71,6 +71,12 @@ final class SqliteLearnerProgressStore implements LearnerProgressStore {
             xp_earned INTEGER NOT NULL
           )
         ''');
+      }
+      if (version < 4) {
+        // v4: the Learner's settings, such as hiding pinyin.
+        _db.execute(
+          'CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+        );
       }
       _db.userVersion = _schemaVersion;
     });
@@ -167,6 +173,24 @@ final class SqliteLearnerProgressStore implements LearnerProgressStore {
         due: Day.parse(row['due_on'] as String),
       ),
   };
+
+  static const _showPinyinKey = 'show_pinyin';
+
+  @override
+  Future<bool> showPinyin() async {
+    final rows = _db.select('SELECT value FROM settings WHERE key = ?', [
+      _showPinyinKey,
+    ]);
+    return rows.isEmpty || rows.single['value'] == 'true';
+  }
+
+  @override
+  Future<void> setShowPinyin(bool show) async {
+    _db.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [
+      _showPinyinKey,
+      '$show',
+    ]);
+  }
 
   void close() => _db.close();
 }

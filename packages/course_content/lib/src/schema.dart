@@ -1,11 +1,20 @@
 /// Schema of the read-only Course Content database, shared by the builder
 /// (writer) and the reader.
 const createSchemaSql = '''
+CREATE TABLE acknowledgements (
+  id TEXT PRIMARY KEY,
+  position INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  author TEXT NOT NULL,
+  license TEXT NOT NULL,
+  url TEXT NOT NULL
+);
 CREATE TABLE words (
   id INTEGER PRIMARY KEY,
   characters TEXT NOT NULL,
   pinyin TEXT NOT NULL,
-  meaning TEXT NOT NULL
+  meaning TEXT NOT NULL,
+  source_id TEXT REFERENCES acknowledgements (id)
 );
 CREATE TABLE units (
   id TEXT PRIMARY KEY,

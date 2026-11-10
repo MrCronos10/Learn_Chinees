@@ -268,4 +268,64 @@ void main() {
     expect(exercise.answer, 'thank you');
     expect(exercise.choices, contains('thank you'));
   });
+
+  group('Acknowledgements', () {
+    /// The fixture with Word 谢谢 citing [source] and these [acknowledgements].
+    File sourceWith(String source, String acknowledgements) =>
+        File(p.join(dir.path, 'sourced.json'))..writeAsStringSync(
+          File(fixture)
+              .readAsStringSync()
+              .replaceFirst(
+                '"meaning": "thank you" }',
+                '"meaning": "thank you", "source": "$source" }',
+              )
+              .replaceFirst(
+                '"words": [',
+                '"acknowledgements": [$acknowledgements],\n  "words": [',
+              ),
+        );
+
+    const cedict =
+        '{ "id": "cc-cedict", "name": "CC-CEDICT", "author": "MDBG", '
+        '"license": "CC BY-SA 4.0", "url": "https://cc-cedict.org/" }';
+
+    test('are listed from the Course Content', () async {
+      final content = build(sourceWith('cc-cedict', cedict).path, 'course.db');
+
+      final acknowledgements = await content.acknowledgements();
+
+      expect(acknowledgements.single.name, 'CC-CEDICT');
+      expect(acknowledgements.single.author, 'MDBG');
+      expect(acknowledgements.single.license, 'CC BY-SA 4.0');
+      expect(acknowledgements.single.url, 'https://cc-cedict.org/');
+    });
+
+    test('the build fails when a source has no Acknowledgement', () {
+      expect(
+        () => build(sourceWith('tatoeba', cedict).path, 'course.db'),
+        throwsA(
+          isA<ContentBuildException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('tatoeba'), contains('Acknowledgement')),
+          ),
+        ),
+      );
+    });
+
+    test('the build fails when an Acknowledgement has no license', () {
+      final noLicense = cedict.replaceFirst('"license": "CC BY-SA 4.0", ', '');
+
+      expect(
+        () => build(sourceWith('cc-cedict', noLicense).path, 'course.db'),
+        throwsA(
+          isA<ContentBuildException>().having(
+            (e) => e.message,
+            'message',
+            contains('license'),
+          ),
+        ),
+      );
+    });
+  });
 }
