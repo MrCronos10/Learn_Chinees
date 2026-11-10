@@ -16,3 +16,5 @@
 Done. Settings (gear on the Lesson path): "Show pinyin" switch saved in Learner Progress (schema v4 `settings` table) and applied to every Word shown in an Exercise. The one exception: a listening Exercise on a device with no Chinese voice still shows pinyin, since that is the only way to answer it.
 
 Acknowledgements: the content source has an `acknowledgements` list (`id`, `name`, `author`, `license`, `url`, all required) and a Word may cite one with `"source": "<id>"`. The build fails with a clear message if a cited source has no Acknowledgement or one is missing a field. The screen lists them from the Course Content; with the current original fixture it says no third-party sources are used. Ticket 08 should make Tone Recordings cite their source the same way. Links are shown as selectable text (no url_launcher yet).
+
+Decided by the developer on 2026-11-11: the pinyin setting stays in Learner Progress; CONTEXT.md's definition now includes the Learner's settings.

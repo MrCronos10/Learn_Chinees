@@ -9,7 +9,7 @@ An adult absolute beginner using the app to learn everyday conversational Chines
 _Avoid_: User, student, player
 
 **Learner Progress**:
-Everything the app knows about one Learner: Lessons passed, each Word's Box and due date, XP, and Streak. Never overwritten by a content update.
+Everything the app knows about one Learner: Lessons passed, each Word's Box and due date, XP, Streak, and the Learner's settings (such as hiding pinyin). Never overwritten by a content update.
 _Avoid_: Save data, user data, state
 
 **Day**:
