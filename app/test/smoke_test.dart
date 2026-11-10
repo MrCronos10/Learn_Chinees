@@ -11,6 +11,14 @@ const words = [
   Word(id: 3, characters: '再见', pinyin: 'zàijiàn', meaning: 'goodbye'),
 ];
 
+/// Tone Recordings of "ma" in all four tones.
+const ma = {
+  1: ToneRecording(syllable: 'ma', tone: 1, file: 'ma1.mp3'),
+  2: ToneRecording(syllable: 'ma', tone: 2, file: 'ma2.mp3'),
+  3: ToneRecording(syllable: 'ma', tone: 3, file: 'ma3.mp3'),
+  4: ToneRecording(syllable: 'ma', tone: 4, file: 'ma4.mp3'),
+};
+
 const acknowledgements = [
   Acknowledgement(
     name: 'CC-CEDICT',
@@ -38,6 +46,13 @@ StudyEngine fakeEngine([Clock? clock]) => StudyEngine(
       title: 'Listening',
       exercises: [
         ListeningExercise(word: words[0], choices: const ['goodbye', 'hello']),
+        ToneIdentificationExercise(syllable: 'ma', tone: 3, recordings: ma),
+        ToneMatchingExercise(
+          syllable: 'ma',
+          tone: 2,
+          recordings: ma,
+          choices: const ['4', '2', '1', '3'],
+        ),
       ],
     ),
   ], acknowledgements: acknowledgements),
@@ -158,8 +173,8 @@ void main() {
     expect(find.text('2-Day Streak'), findsOneWidget);
   });
 
-  testWidgets('Settings hide pinyin and list Acknowledgements; a listening '
-      'Exercise plays the Word and shows it once answered', (tester) async {
+  testWidgets('Settings hide pinyin and list Acknowledgements; listening and '
+      'tone Exercises play their audio', (tester) async {
     final audio = FakeAudioPlayer();
     final engine = fakeEngine();
     await tester.pumpWidget(ChineseApp(engine: engine, audio: audio));
@@ -198,5 +213,27 @@ void main() {
     expect(find.text('Correct!'), findsOneWidget);
     expect(find.text('你好'), findsOneWidget, reason: 'shown once answered');
     expect(find.text('nǐ hǎo'), findsNothing, reason: 'pinyin is hidden');
+    await continueOn(tester);
+
+    // Hear a syllable, pick its tone: played from its Tone Recording only.
+    expect(audio.playedRecordings, ['ma3.mp3']);
+    expect(audio.spokenWords, ['你好', '你好'], reason: 'never text-to-speech');
+    await choose(tester, '2nd tone');
+    expect(find.text('Correct answer: mǎ (3rd tone)'), findsOneWidget);
+    await continueOn(tester);
+
+    // See a toned syllable, play the sounds, pick the matching one.
+    expect(find.text('má'), findsOneWidget);
+    await tester.tap(find.byTooltip('Play sound A'));
+    await tester.tap(find.byTooltip('Play sound B'));
+    expect(audio.playedRecordings, ['ma3.mp3', 'ma4.mp3', 'ma2.mp3']);
+    await choose(tester, 'Sound B');
+    expect(find.text('Correct!'), findsOneWidget);
+    await continueOn(tester);
+
+    // The missed tone Exercise comes back, with its recording played again.
+    expect(audio.playedRecordings.last, 'ma3.mp3');
+    await choose(tester, '3rd tone');
+    expect(find.text('Correct!'), findsOneWidget);
   });
 }

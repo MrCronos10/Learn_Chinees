@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:course_content/course_content.dart';
@@ -326,6 +327,186 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('tone Exercises', () {
+    const ack = {
+      'id': 'own-recordings',
+      'name': 'Tone Recordings',
+      'author': 'Test Speaker',
+      'license': 'CC BY-SA 4.0',
+      'url': 'https://example.org/',
+    };
+
+    /// A source with one Lesson of two tone Exercises on "ma" plus one
+    /// multiple-choice Exercise.
+    File toneSource({
+      List<Map<String, Object>> acknowledgements = const [ack],
+    }) => File(p.join(dir.path, 'tones.json'))
+      ..writeAsStringSync(
+        jsonEncode({
+          'acknowledgements': acknowledgements,
+          'units': [
+            {
+              'id': 'u',
+              'title': 'Unit',
+              'lessons': [
+                {
+                  'id': 'tones',
+                  'title': 'The four tones',
+                  'exercises': [
+                    {'kind': 'toneIdentification', 'syllable': 'ma', 'tone': 3},
+                    {'kind': 'toneMatching', 'syllable': 'ma', 'tone': 2},
+                    {'kind': 'multipleChoice', 'word': '你好'},
+                  ],
+                },
+              ],
+            },
+          ],
+          'words': [
+            {'characters': '你好', 'pinyin': 'nǐ hǎo', 'meaning': 'hello'},
+            {'characters': '谢谢', 'pinyin': 'xièxie', 'meaning': 'thank you'},
+          ],
+        }),
+      );
+
+    /// A Tone Recordings list for "ma" in [tones], with each audio file
+    /// written next to it unless [missingFile].
+    File recordings({
+      List<int> tones = const [1, 2, 3, 4],
+      String source = 'own-recordings',
+      bool missingFile = false,
+    }) {
+      final audio = Directory(p.join(dir.path, 'audio'))..createSync();
+      for (final tone in tones) {
+        if (!missingFile) {
+          File(p.join(audio.path, 'ma$tone.mp3')).writeAsStringSync('ma$tone');
+        }
+      }
+      return File(p.join(dir.path, 'tone_recordings.json'))..writeAsStringSync(
+        jsonEncode({
+          'recordings': [
+            for (final tone in tones)
+              {
+                'syllable': 'ma',
+                'tone': tone,
+                'file': 'audio/ma$tone.mp3',
+                'source': source,
+              },
+          ],
+        }),
+      );
+    }
+
+    SqliteCourseContent buildTones(File source, File? recordingsFile) {
+      final output = p.join(dir.path, 'out', 'course.db');
+      Directory(p.dirname(output)).createSync(recursive: true);
+      buildCourseContent(
+        sourcePath: source.path,
+        registryPath: registry,
+        outputPath: output,
+        recordingsPath: recordingsFile?.path,
+      );
+      final content = SqliteCourseContent.open(output);
+      addTearDown(content.close);
+      return content;
+    }
+
+    Matcher failsWith(List<String> parts) => throwsA(
+      isA<ContentBuildException>().having(
+        (e) => e.message,
+        'message',
+        allOf([for (final part in parts) contains(part)]),
+      ),
+    );
+
+    test('are built in both directions with their Tone Recordings', () async {
+      final content = buildTones(toneSource(), recordings());
+
+      final exercises = (await content.lesson('tones')).exercises;
+
+      final hear = exercises[0] as ToneIdentificationExercise;
+      expect((hear.syllable, hear.tone), ('ma', 3));
+      expect(hear.choices, ['1', '2', '3', '4']);
+      expect(hear.recording.file, 'ma3.mp3');
+
+      final see = exercises[1] as ToneMatchingExercise;
+      expect(see.tonedSyllable, 'má');
+      expect(see.choices, unorderedEquals(['1', '2', '3', '4']));
+      expect([
+        for (final c in see.choices) see.recordingFor(c).file,
+      ], unorderedEquals(['ma1.mp3', 'ma2.mp3', 'ma3.mp3', 'ma4.mp3']));
+    });
+
+    test('copy their Tone Recordings next to the database', () {
+      buildTones(toneSource(), recordings());
+
+      final copied = File(p.join(dir.path, 'out', 'tones', 'ma3.mp3'));
+      expect(copied.readAsStringSync(), 'ma3');
+    });
+
+    test('never enter Review', () async {
+      final content = buildTones(toneSource(), recordings());
+
+      final lesson = await content.lesson('tones');
+      final wordId = lesson.exercises[2].word!.id;
+
+      final review = await content.reviewExercises({wordId});
+      expect(review[wordId], isA<MultipleChoiceExercise>());
+    });
+
+    test('the build fails when a tone Exercise has no Tone Recording', () {
+      expect(
+        () => buildTones(toneSource(), recordings(tones: [1, 3, 4])),
+        failsWith(['tones', 'ma', 'tone 2', 'Tone Recording']),
+      );
+    });
+
+    test(
+      'the build fails when tone Exercises have no Tone Recordings list',
+      () {
+        expect(
+          () => buildTones(toneSource(), null),
+          failsWith(['ma', 'Tone Recording']),
+        );
+      },
+    );
+
+    test('the build fails when a Tone Recording file is missing', () {
+      expect(
+        () => buildTones(toneSource(), recordings(missingFile: true)),
+        failsWith(['ma1.mp3']),
+      );
+    });
+
+    test('the build fails when a Tone Recording source has no '
+        'Acknowledgement', () {
+      expect(
+        () => buildTones(toneSource(acknowledgements: []), recordings()),
+        failsWith(['own-recordings', 'Acknowledgement']),
+      );
+    });
+
+    test('the build fails when a syllable is not plain pinyin', () {
+      final source = toneSource();
+      source.writeAsStringSync(
+        source.readAsStringSync().replaceFirst(
+          '"syllable":"ma","tone":3',
+          '"syllable":"mm","tone":3',
+        ),
+      );
+
+      expect(() => buildTones(source, recordings()), failsWith(['"mm"']));
+    });
+
+    test('the build fails when a tone is not 1 to 4', () {
+      final source = toneSource();
+      source.writeAsStringSync(
+        source.readAsStringSync().replaceFirst('"tone":3', '"tone":5'),
+      );
+
+      expect(() => buildTones(source, recordings()), failsWith(['tone']));
     });
   });
 }

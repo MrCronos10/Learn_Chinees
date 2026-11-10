@@ -31,14 +31,37 @@ CREATE TABLE exercises (
   lesson_id TEXT NOT NULL REFERENCES lessons (id),
   position INTEGER NOT NULL,
   kind TEXT NOT NULL,
-  word_id INTEGER NOT NULL REFERENCES words (id),
+  word_id INTEGER REFERENCES words (id),
+  syllable TEXT,
+  tone INTEGER,
   choices TEXT NOT NULL,
   PRIMARY KEY (lesson_id, position)
+);
+CREATE TABLE tone_recordings (
+  syllable TEXT NOT NULL,
+  tone INTEGER NOT NULL,
+  file TEXT NOT NULL,
+  source_id TEXT NOT NULL REFERENCES acknowledgements (id),
+  PRIMARY KEY (syllable, tone)
 );
 ''';
 
 const exerciseKindMultipleChoice = 'multipleChoice';
 const exerciseKindListening = 'listening';
 
+const exerciseKindToneIdentification = 'toneIdentification';
+const exerciseKindToneMatching = 'toneMatching';
+
 /// Exercise kinds that study one Word and offer its meaning among choices.
 const wordExerciseKinds = {exerciseKindMultipleChoice, exerciseKindListening};
+
+/// Exercise kinds about the tone of one syllable, played from Tone
+/// Recordings (ADR-0002).
+const toneExerciseKinds = {
+  exerciseKindToneIdentification,
+  exerciseKindToneMatching,
+};
+
+/// Folder, next to the Course Content database, holding the bundled Tone
+/// Recordings.
+const toneRecordingsFolder = 'tones';

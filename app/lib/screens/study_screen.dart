@@ -159,21 +159,62 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
                   word: e.word,
                   audio: widget.audio,
                 ),
+                final ToneIdentificationExercise e => _TonePrompt(
+                  key: ValueKey(_shown),
+                  recording: e.recording,
+                  audio: widget.audio,
+                ),
+                final ToneMatchingExercise e => Column(
+                  children: [
+                    const Text('Which sound is this?'),
+                    const SizedBox(height: 24),
+                    Text(
+                      e.tonedSyllable,
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
+                  ],
+                ),
               },
               const Spacer(),
-              for (final choice in exercise.choices)
+              for (final (i, choice) in exercise.choices.indexed)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: OutlinedButton(
-                    onPressed: () => _answer(session, choice),
-                    child: Text(choice),
-                  ),
+                  child: switch (exercise) {
+                    // Each sound can be played before choosing it.
+                    final ToneMatchingExercise e => Row(
+                      children: [
+                        IconButton.filledTonal(
+                          tooltip: 'Play sound ${_soundNames[i]}',
+                          icon: const Icon(Icons.volume_up),
+                          onPressed: () => widget.audio.playToneRecording(
+                            e.recordingFor(choice),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _answer(session, choice),
+                            child: Text('Sound ${_soundNames[i]}'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _ => OutlinedButton(
+                      onPressed: () => _answer(session, choice),
+                      child: Text(_choiceLabel(exercise, choice)),
+                    ),
+                  },
                 ),
             ],
             if (feedback != null) ...[
               const Spacer(),
               _FeedbackPanel(
                 feedback: feedback,
+                correctAnswer: switch (_answered) {
+                  final ToneExercise e =>
+                    '${e.tonedSyllable} (${_toneNames[e.tone - 1]})',
+                  _ => feedback.correctAnswer,
+                },
                 word: _answered?.word,
                 showPinyin: showPinyin,
               ),
@@ -188,6 +229,49 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
       ),
     );
   }
+}
+
+const _soundNames = ['A', 'B', 'C', 'D'];
+const _toneNames = ['1st tone', '2nd tone', '3rd tone', '4th tone'];
+
+/// How a choice is shown: tones by name, meanings as they are.
+String _choiceLabel(Exercise exercise, String choice) => switch (exercise) {
+  ToneExercise() => _toneNames[int.parse(choice) - 1],
+  _ => choice,
+};
+
+/// Plays a syllable's Tone Recording when shown and offers a replay.
+class _TonePrompt extends StatefulWidget {
+  const _TonePrompt({super.key, required this.recording, required this.audio});
+
+  final ToneRecording recording;
+  final AudioPlayer audio;
+
+  @override
+  State<_TonePrompt> createState() => _TonePromptState();
+}
+
+class _TonePromptState extends State<_TonePrompt> {
+  @override
+  void initState() {
+    super.initState();
+    _play();
+  }
+
+  void _play() => widget.audio.playToneRecording(widget.recording);
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      const Text('Which tone did you hear?'),
+      const SizedBox(height: 24),
+      FilledButton.tonalIcon(
+        onPressed: _play,
+        icon: const Icon(Icons.volume_up),
+        label: const Text('Play again'),
+      ),
+    ],
+  );
 }
 
 /// Plays the Word when shown, offers a replay, and explains clearly when
@@ -267,11 +351,15 @@ class _WordCard extends StatelessWidget {
 class _FeedbackPanel extends StatelessWidget {
   const _FeedbackPanel({
     required this.feedback,
+    required this.correctAnswer,
     required this.word,
     required this.showPinyin,
   });
 
   final AnswerFeedback feedback;
+
+  /// The correct answer as the Learner reads it.
+  final String correctAnswer;
 
   /// The Word the Exercise was about, shown so a Word only heard is also
   /// seen as characters and pinyin.
@@ -296,7 +384,7 @@ class _FeedbackPanel extends StatelessWidget {
           ),
           if (!feedback.correct) ...[
             const SizedBox(height: 8),
-            Text('Correct answer: ${feedback.correctAnswer}'),
+            Text('Correct answer: $correctAnswer'),
           ],
           if (word case final word?) ...[
             const SizedBox(height: 16),
