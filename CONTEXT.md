@@ -17,7 +17,7 @@ One calendar day in the Learner's local time zone on their device.
 _Avoid_: 24 hours, session
 
 **XP**:
-Points a Learner earns for each Exercise answered correctly on the first try, whether or not the Lesson is passed. A missed Exercise repeated at the end earns nothing. XP is saved only when the Lesson is finished.
+Points a Learner earns for each Exercise answered correctly on the first try, whether or not the Lesson is passed. A missed Exercise repeated at the end earns nothing. XP is saved only when the Lesson is finished. Replaying a Passed Lesson earns no XP (it still counts toward the Streak).
 _Avoid_: Score, points, coins
 
 **Streak**:
@@ -39,7 +39,7 @@ An ordered group of Lessons around one theme (the first is "Greetings & introduc
 _Avoid_: Chapter, section, course
 
 **Lesson**:
-A short, ordered set of Exercises that introduces a few Words or one pronunciation topic. Lessons are unlocked one at a time along a fixed path.
+A short, ordered set of Exercises that introduces a few Words or one pronunciation topic. Lessons are unlocked one at a time along a fixed path: the Lesson after the last Passed Lesson is unlocked, and so is the first Lesson not yet passed (which only differs when a content update inserts a Lesson behind the Learner).
 _Avoid_: Level, quiz, module
 
 **Passed Lesson**:

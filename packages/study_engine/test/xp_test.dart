@@ -59,6 +59,29 @@ void main() {
         expect(await engine.totalXp(), 110);
       });
 
+      test('replaying a Passed Lesson earns no XP', () async {
+        final engine = engineOn(backend.store);
+        await play(await engine.startLesson('a')); // 50
+
+        final replay = await play(await engine.startLesson('a'));
+
+        expect(replay.passed, isTrue);
+        expect(replay.xpEarned, 0);
+        expect(await engine.totalXp(), 50);
+      });
+
+      test(
+        'replaying a Passed Lesson still counts toward the Streak',
+        () async {
+          final engine = engineOn(backend.store);
+          await play(await engine.startLesson('a'));
+
+          await play(await engine.startLesson('a'));
+
+          expect(await engine.currentStreak(), 1);
+        },
+      );
+
       test('a Lesson session can only be finished once', () async {
         final engine = engineOn(backend.store);
         final session = await engine.startLesson('a');

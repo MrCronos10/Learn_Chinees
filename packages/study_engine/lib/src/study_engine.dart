@@ -41,7 +41,8 @@ final class LessonResult {
   /// Percentage of Exercises answered correctly on the first try, rounded down.
   final int firstTryPercent;
 
-  /// XP earned in this Lesson, whether or not it was passed.
+  /// XP earned in this Lesson, whether or not it was passed; 0 when
+  /// replaying a Passed Lesson.
   final int xpEarned;
 
   /// The Lesson that finishing this one unlocked, if any.
@@ -197,7 +198,11 @@ final class StudyEngine {
       }
     }
     final before = await lessonPath();
-    final xpEarned = firstTryCorrect * xpPerFirstTryCorrect;
+    // Replaying a Passed Lesson earns no XP, so XP can't be farmed.
+    final replay = before.any(
+      (l) => l.id == lesson.id && l.state == LessonState.passed,
+    );
+    final xpEarned = replay ? 0 : firstTryCorrect * xpPerFirstTryCorrect;
     await _progress.recordLessonFinished(
       FinishedLesson(
         lessonId: lesson.id,

@@ -21,3 +21,5 @@ Done. New `packages/learner_progress` holds `SqliteLearnerProgressStore` (own `l
 Unlock rule as built: the Lesson after the last Passed Lesson is unlocked, and so is the first Lesson not yet passed. They only differ when a content update inserts a Lesson behind the Learner; the literal rule would strand that Lesson locked forever.
 
 Follow-up (not fixed): Learner Progress refers to Lessons by their source id, and nothing stops a content author from renaming one, which would drop that pass. A Lesson ID registry in the builder (like the Word ID one) would close this.
+
+Unlock rule confirmed by the developer on 2026-11-11 (kept after code review).
