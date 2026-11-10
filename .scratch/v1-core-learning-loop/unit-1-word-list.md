@@ -1,6 +1,6 @@
 # Unit 1 "Greetings & introductions": draft Word list
 
-**Status:** draft, waiting for the developer's approval (ticket 10). Nothing is built from it until approved.
+**Status:** approved by the developer as drafted on 2026-11-11 (ticket 10): Words, Lesson titles and 他/她 in one Lesson all kept.
 
 Meanings below are placeholders written for review; when building, each Word's pinyin and meaning come from CC-CEDICT (CC BY-SA 4.0), trimmed to a short beginner gloss. Pinyin uses tone marks; a syllable with no mark is the neutral tone.
 
@@ -59,7 +59,7 @@ Note: 吗 is neutral tone, so it gets no tone Exercise.
 
 19 Words across 4 Lessons. All three Exercise kinds appear in every Lesson. Tone Exercises use the 12 syllables listed in `tone-recordings-plan.md`.
 
-## Questions for the developer
+## Questions for the developer (answered 2026-11-11: approved as drafted)
 
 1. Approve, swap or drop any Word? (Candidates kept in reserve: 们 men, 也 yě, 呢 ne, 学生 xuésheng, 中国 Zhōngguó.)
 2. Are the Lesson titles OK?

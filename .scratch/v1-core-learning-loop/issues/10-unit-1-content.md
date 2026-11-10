@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Word list drafted and reviewed and approved by the developer before building
+- [x] Word list drafted and reviewed and approved by the developer before building
 - [ ] Unit 1 has 4 Lessons along a fixed path; Lesson 1 starts with the four tones
 - [ ] Multiple-choice, listening and tone Exercises all appear in the Unit
 - [ ] CC-CEDICT, Tatoeba and Tone Recording sources each have an Acknowledgement
@@ -16,3 +16,5 @@
 ## Comments
 
 2026-11-11: Draft Word list in `unit-1-word-list.md` (19 Words, 4 Lessons), waiting for the developer's approval.
+
+2026-11-11: The developer approved the Word list as drafted (Words, Lesson titles, and 他/她 together in Lesson 3).
