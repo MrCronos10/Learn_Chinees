@@ -39,6 +39,9 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
   late Future<StudySession<R>> _session = widget.start();
   late final Future<bool> _showPinyin = widget.showPinyin();
   AnswerFeedback? _feedback;
+
+  /// The Exercise just answered, shown with its feedback.
+  Exercise? _answered;
   R? _result;
   bool _finishing = false;
 
@@ -49,7 +52,10 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
   void _answer(StudySession<R> session, String choice) {
     // Ignore a second tap that lands before feedback is shown.
     if (_feedback != null) return;
-    setState(() => _feedback = session.answer(choice));
+    setState(() {
+      _answered = session.current;
+      _feedback = session.answer(choice);
+    });
   }
 
   Future<void> _continue(StudySession<R> session) async {
@@ -141,16 +147,16 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
           children: [
             if (feedback == null && exercise != null) ...[
               switch (exercise) {
-                MultipleChoiceExercise(:final word) => Column(
+                final MultipleChoiceExercise e => Column(
                   children: [
                     const Text('What does this mean?'),
                     const SizedBox(height: 24),
-                    _WordCard(word: word, showPinyin: showPinyin),
+                    _WordCard(word: e.word, showPinyin: showPinyin),
                   ],
                 ),
-                ListeningExercise(:final word) => _ListeningPrompt(
+                final ListeningExercise e => _ListeningPrompt(
                   key: ValueKey(_shown),
-                  word: word,
+                  word: e.word,
                   audio: widget.audio,
                 ),
               },
@@ -166,7 +172,11 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
             ],
             if (feedback != null) ...[
               const Spacer(),
-              _FeedbackPanel(feedback: feedback),
+              _FeedbackPanel(
+                feedback: feedback,
+                word: _answered?.word,
+                showPinyin: showPinyin,
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => _continue(session),
@@ -255,9 +265,18 @@ class _WordCard extends StatelessWidget {
 }
 
 class _FeedbackPanel extends StatelessWidget {
-  const _FeedbackPanel({required this.feedback});
+  const _FeedbackPanel({
+    required this.feedback,
+    required this.word,
+    required this.showPinyin,
+  });
 
   final AnswerFeedback feedback;
+
+  /// The Word the Exercise was about, shown so a Word only heard is also
+  /// seen as characters and pinyin.
+  final Word? word;
+  final bool showPinyin;
 
   @override
   Widget build(BuildContext context) {
@@ -278,6 +297,10 @@ class _FeedbackPanel extends StatelessWidget {
           if (!feedback.correct) ...[
             const SizedBox(height: 8),
             Text('Correct answer: ${feedback.correctAnswer}'),
+          ],
+          if (word case final word?) ...[
+            const SizedBox(height: 16),
+            _WordCard(word: word, showPinyin: showPinyin),
           ],
         ],
       ),

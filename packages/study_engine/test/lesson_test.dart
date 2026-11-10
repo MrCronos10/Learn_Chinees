@@ -97,6 +97,43 @@ void lessonSuite() {
       ]);
     });
 
+    test(
+      'the result of passing a Lesson names the Lesson it unlocked',
+      () async {
+        final engine = engineWith(threeLessons);
+
+        final result = await play(await engine.startLesson('a'));
+
+        expect(result.nextLessonUnlocked?.id, 'b');
+        expect(result.nextLessonUnlocked?.title, 'Lesson b');
+      },
+    );
+
+    test('the result names no unlocked Lesson after failing', () async {
+      final engine = engineWith(threeLessons);
+
+      final result = await play(await engine.startLesson('a'), wrongCount: 2);
+
+      expect(result.nextLessonUnlocked, isNull);
+    });
+
+    test('replaying a Passed Lesson unlocks nothing new', () async {
+      final engine = engineWith(threeLessons);
+      await play(await engine.startLesson('a'));
+
+      final result = await play(await engine.startLesson('a'));
+
+      expect(result.nextLessonUnlocked, isNull);
+    });
+
+    test('passing the last Lesson unlocks nothing', () async {
+      final engine = engineWith([lessonOf(5)]);
+
+      final result = await play(await engine.startLesson('lesson-1'));
+
+      expect(result.nextLessonUnlocked, isNull);
+    });
+
     test('failing a Lesson leaves the next one locked', () async {
       final engine = engineWith(threeLessons);
 

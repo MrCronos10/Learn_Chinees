@@ -32,6 +32,7 @@ final class LessonResult {
     required this.passed,
     required this.firstTryPercent,
     required this.xpEarned,
+    this.nextLessonUnlocked,
   });
 
   /// Whether this is a Passed Lesson (at least 80% correct on the first try).
@@ -42,6 +43,9 @@ final class LessonResult {
 
   /// XP earned in this Lesson, whether or not it was passed.
   final int xpEarned;
+
+  /// The Lesson that finishing this one unlocked, if any.
+  final LessonSummary? nextLessonUnlocked;
 }
 
 /// The outcome of a finished Review.
@@ -180,24 +184,41 @@ final class StudyEngine {
     return streak;
   }
 
-  Future<void> _recordLesson(Lesson lesson, LessonResult result) async {
+  Future<LessonResult> _recordLesson(Lesson lesson, int firstTryCorrect) async {
     final today = _clock.today();
+    final total = lesson.exercises.length;
+    final passed = firstTryCorrect * 5 >= total * 4;
     final enteringReview = <int, WordSchedule>{};
-    if (result.passed) {
+    if (passed) {
       for (final exercise in lesson.exercises) {
         if (exercise.word case final word?) {
           enteringReview[word.id] = _scheduler.enter(today);
         }
       }
     }
+    final before = await lessonPath();
+    final xpEarned = firstTryCorrect * xpPerFirstTryCorrect;
     await _progress.recordLessonFinished(
       FinishedLesson(
         lessonId: lesson.id,
         day: today,
-        passed: result.passed,
-        xpEarned: result.xpEarned,
+        passed: passed,
+        xpEarned: xpEarned,
         enteringReview: enteringReview,
       ),
+    );
+    final after = await lessonPath();
+    final unlocked = [
+      for (final (i, l) in after.indexed)
+        if (l.state == LessonState.unlocked &&
+            before[i].state == LessonState.locked)
+          LessonSummary(id: l.id, title: l.title),
+    ];
+    return LessonResult(
+      passed: passed,
+      firstTryPercent: firstTryCorrect * 100 ~/ total,
+      xpEarned: xpEarned,
+      nextLessonUnlocked: unlocked.firstOrNull,
     );
   }
 
@@ -293,20 +314,10 @@ final class LessonSession extends StudySession<LessonResult> {
   LessonSession._(this._lesson, this._onFinished) : super._(_lesson.exercises);
 
   final Lesson _lesson;
-  final Future<void> Function(Lesson, LessonResult) _onFinished;
+  final Future<LessonResult> Function(Lesson, int firstTryCorrect) _onFinished;
 
   @override
-  Future<LessonResult> _record() async {
-    final total = exerciseCount;
-    final correct = _firstTryCorrectCount;
-    final result = LessonResult(
-      passed: correct * 5 >= total * 4,
-      firstTryPercent: correct * 100 ~/ total,
-      xpEarned: correct * xpPerFirstTryCorrect,
-    );
-    await _onFinished(_lesson, result);
-    return result;
-  }
+  Future<LessonResult> _record() => _onFinished(_lesson, _firstTryCorrectCount);
 }
 
 /// One Review of the Words due today.

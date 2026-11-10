@@ -11,6 +11,15 @@ const words = [
   Word(id: 3, characters: '再见', pinyin: 'zàijiàn', meaning: 'goodbye'),
 ];
 
+const acknowledgements = [
+  Acknowledgement(
+    name: 'CC-CEDICT',
+    author: 'MDBG',
+    license: 'CC BY-SA 4.0',
+    url: 'https://cc-cedict.org/',
+  ),
+];
+
 StudyEngine fakeEngine([Clock? clock]) => StudyEngine(
   content: InMemoryCourseContent([
     Lesson(
@@ -24,7 +33,14 @@ StudyEngine fakeEngine([Clock? clock]) => StudyEngine(
           ),
       ],
     ),
-  ]),
+    Lesson(
+      id: 'lesson-2',
+      title: 'Listening',
+      exercises: [
+        ListeningExercise(word: words[0], choices: const ['goodbye', 'hello']),
+      ],
+    ),
+  ], acknowledgements: acknowledgements),
   progress: InMemoryLearnerProgressStore(),
   clock: clock ?? FixedClock(const Day(2026, 11, 10)),
 );
@@ -90,6 +106,7 @@ void main() {
     expect(find.text('Lesson passed!'), findsOneWidget);
     expect(find.textContaining('100%'), findsOneWidget);
     expect(find.text('+30 XP'), findsOneWidget);
+    expect(find.text('Unlocked: Listening'), findsOneWidget);
 
     await tester.tap(find.text('Back to Lessons'));
     await tester.pumpAndSettle();
@@ -139,5 +156,47 @@ void main() {
     expect(find.text('Nothing due for Review today'), findsOneWidget);
     expect(find.text('60 XP'), findsOneWidget);
     expect(find.text('2-Day Streak'), findsOneWidget);
+  });
+
+  testWidgets('Settings hide pinyin and list Acknowledgements; a listening '
+      'Exercise plays the Word and shows it once answered', (tester) async {
+    final audio = FakeAudioPlayer();
+    final engine = fakeEngine();
+    await tester.pumpWidget(ChineseApp(engine: engine, audio: audio));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saying hello'));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 3; i++) {
+      await choose(tester, shownMeaning(tester));
+      await continueOn(tester);
+    }
+    await tester.tap(find.text('Back to Lessons'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show pinyin'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Acknowledgements'));
+    await tester.pumpAndSettle();
+    expect(find.text('CC-CEDICT'), findsOneWidget);
+    expect(find.textContaining('CC BY-SA 4.0'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Listening'));
+    await tester.pumpAndSettle();
+    expect(audio.spokenWords, ['你好']);
+    expect(find.text('你好'), findsNothing, reason: 'heard, not read');
+    await tester.tap(find.text('Play again'));
+    await tester.pumpAndSettle();
+    expect(audio.spokenWords, ['你好', '你好']);
+
+    await choose(tester, 'hello');
+    expect(find.text('Correct!'), findsOneWidget);
+    expect(find.text('你好'), findsOneWidget, reason: 'shown once answered');
+    expect(find.text('nǐ hǎo'), findsNothing, reason: 'pinyin is hidden');
   });
 }

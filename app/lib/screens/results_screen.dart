@@ -48,6 +48,14 @@ class ResultsScreen extends StatelessWidget {
                   'You need 80% on the first try to pass.',
                   textAlign: TextAlign.center,
                 ),
+              if (result.nextLessonUnlocked case final next?) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Unlocked: ${next.title}',
+                  style: text.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const Spacer(),
               if (!result.passed) ...[
                 OutlinedButton(

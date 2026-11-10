@@ -29,9 +29,9 @@ sealed class Exercise {
   Word? get word;
 }
 
-/// Shows a Word (characters + pinyin) and asks for its English meaning.
-final class MultipleChoiceExercise extends Exercise {
-  const MultipleChoiceExercise({required this.word, required this.choices});
+/// An Exercise about one Word that asks for its English meaning.
+sealed class MeaningExercise extends Exercise {
+  const MeaningExercise({required this.word, required this.choices});
 
   @override
   final Word word;
@@ -43,19 +43,15 @@ final class MultipleChoiceExercise extends Exercise {
   String get answer => word.meaning;
 }
 
+/// Shows a Word (characters + pinyin) and asks for its English meaning.
+final class MultipleChoiceExercise extends MeaningExercise {
+  const MultipleChoiceExercise({required super.word, required super.choices});
+}
+
 /// Plays a Word aloud (device speech engine; ADR-0002) and asks for its
 /// English meaning. The Word itself is not shown until answered.
-final class ListeningExercise extends Exercise {
-  const ListeningExercise({required this.word, required this.choices});
-
-  @override
-  final Word word;
-
-  @override
-  final List<String> choices;
-
-  @override
-  String get answer => word.meaning;
+final class ListeningExercise extends MeaningExercise {
+  const ListeningExercise({required super.word, required super.choices});
 }
 
 /// A Lesson as listed on the Lesson path.
