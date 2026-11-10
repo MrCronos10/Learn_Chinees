@@ -15,6 +15,7 @@ class LessonPathScreen extends StatefulWidget {
 
 class _LessonPathScreenState extends State<LessonPathScreen> {
   late Future<List<PathLesson>> _path = widget.engine.lessonPath();
+  late Future<int> _totalXp = widget.engine.totalXp();
 
   Future<void> _open(PathLesson lesson) async {
     await Navigator.of(context).push(
@@ -26,13 +27,35 @@ class _LessonPathScreenState extends State<LessonPathScreen> {
     if (!mounted) return;
     setState(() {
       _path = widget.engine.lessonPath();
+      _totalXp = widget.engine.totalXp();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lessons')),
+      appBar: AppBar(
+        title: const Text('Lessons'),
+        actions: [
+          FutureBuilder(
+            future: _totalXp,
+            builder: (context, snapshot) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.bolt),
+                  // Never show a made-up 0 while loading or after an error.
+                  Text(switch (snapshot) {
+                    AsyncSnapshot(hasError: true) => '? XP',
+                    AsyncSnapshot(:final data?) => '$data XP',
+                    _ => '… XP',
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: FutureBuilder(
         future: _path,
         builder: (context, snapshot) {

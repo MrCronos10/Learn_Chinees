@@ -17,7 +17,7 @@ One calendar day in the Learner's local time zone on their device.
 _Avoid_: 24 hours, session
 
 **XP**:
-Points a Learner earns for each correctly answered Exercise, whether or not the Lesson is passed.
+Points a Learner earns for each Exercise answered correctly on the first try, whether or not the Lesson is passed. A missed Exercise repeated at the end earns nothing. XP is saved only when the Lesson is finished.
 _Avoid_: Score, points, coins
 
 **Streak**:

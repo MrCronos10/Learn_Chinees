@@ -37,6 +37,12 @@ class ResultsScreen extends StatelessWidget {
                 'First try: ${result.firstTryPercent}% correct',
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              Text(
+                '+${result.xpEarned} XP',
+                style: text.titleLarge,
+                textAlign: TextAlign.center,
+              ),
               if (!result.passed)
                 const Text(
                   'You need 80% on the first try to pass.',

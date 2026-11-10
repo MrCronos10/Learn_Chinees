@@ -1,5 +1,4 @@
 import 'course_content.dart';
-import 'day.dart';
 import 'learner_progress.dart';
 
 /// Course Content held in memory, for tests and fakes.
@@ -24,13 +23,20 @@ final class InMemoryCourseContent implements CourseContentReader {
 
 /// Learner Progress held in memory; lost when the app closes.
 final class InMemoryLearnerProgressStore implements LearnerProgressStore {
-  final Map<String, Day> _passedLessons = {};
+  final List<FinishedLesson> _finished = [];
 
   @override
-  Future<Set<String>> passedLessonIds() async => _passedLessons.keys.toSet();
-
-  @override
-  Future<void> recordPassedLesson(String lessonId, Day day) async {
-    _passedLessons.putIfAbsent(lessonId, () => day);
+  Future<void> recordLessonFinished(FinishedLesson lesson) async {
+    _finished.add(lesson);
   }
+
+  @override
+  Future<Set<String>> passedLessonIds() async => {
+    for (final lesson in _finished)
+      if (lesson.passed) lesson.lessonId,
+  };
+
+  @override
+  Future<int> totalXp() async =>
+      _finished.fold<int>(0, (sum, lesson) => sum + lesson.xpEarned);
 }

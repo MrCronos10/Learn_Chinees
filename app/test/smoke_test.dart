@@ -49,8 +49,9 @@ void main() {
     await tester.pumpWidget(ChineseApp(engine: fakeEngine()));
     await tester.pumpAndSettle();
 
-    // Lesson path shows the one Lesson.
+    // Lesson path shows the one Lesson and no XP yet.
     expect(find.text('Saying hello'), findsOneWidget);
+    expect(find.text('0 XP'), findsOneWidget);
     await tester.tap(find.text('Saying hello'));
     await tester.pumpAndSettle();
 
@@ -71,6 +72,7 @@ void main() {
     // 2 of 3 on the first try: not a Passed Lesson.
     expect(find.text('Not passed yet'), findsOneWidget);
     expect(find.textContaining('66%'), findsOneWidget);
+    expect(find.text('+20 XP'), findsOneWidget);
 
     // Retry at once and pass; the path then shows the Lesson as passed.
     await tester.tap(find.text('Try again'));
@@ -81,10 +83,12 @@ void main() {
     }
     expect(find.text('Lesson passed!'), findsOneWidget);
     expect(find.textContaining('100%'), findsOneWidget);
+    expect(find.text('+30 XP'), findsOneWidget);
 
     await tester.tap(find.text('Back to Lessons'));
     await tester.pumpAndSettle();
     expect(find.text('Saying hello'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    expect(find.text('50 XP'), findsOneWidget);
   });
 }

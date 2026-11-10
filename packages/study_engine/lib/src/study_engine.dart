@@ -27,14 +27,26 @@ final class AnswerFeedback {
 
 /// The outcome of a finished Lesson.
 final class LessonResult {
-  const LessonResult({required this.passed, required this.firstTryPercent});
+  const LessonResult({
+    required this.passed,
+    required this.firstTryPercent,
+    required this.xpEarned,
+  });
 
   /// Whether this is a Passed Lesson (at least 80% correct on the first try).
   final bool passed;
 
   /// Percentage of Exercises answered correctly on the first try, rounded down.
   final int firstTryPercent;
+
+  /// XP earned in this Lesson, whether or not it was passed.
+  final int xpEarned;
 }
+
+/// XP for each Exercise answered correctly on the first try. Repeats of a
+/// missed Exercise earn nothing: they always end correct, so counting them
+/// would give every finished Lesson the same XP.
+const xpPerFirstTryCorrect = 10;
 
 /// Holds all learning rules. Depends only on injected collaborators.
 final class StudyEngine {
@@ -95,11 +107,18 @@ final class StudyEngine {
     return LessonSession._(lesson, _onFinished);
   }
 
-  Future<void> _onFinished(Lesson lesson, LessonResult result) async {
-    if (result.passed) {
-      await _progress.recordPassedLesson(lesson.id, _clock.today());
-    }
-  }
+  /// Total XP the Learner has earned.
+  Future<int> totalXp() => _progress.totalXp();
+
+  Future<void> _onFinished(Lesson lesson, LessonResult result) =>
+      _progress.recordLessonFinished(
+        FinishedLesson(
+          lessonId: lesson.id,
+          day: _clock.today(),
+          passed: result.passed,
+          xpEarned: result.xpEarned,
+        ),
+      );
 }
 
 /// One play-through of a Lesson.
@@ -114,6 +133,7 @@ final class LessonSession {
   final List<int> _queue;
   final Set<int> _answeredOnce = {};
   int _firstTryCorrect = 0;
+  bool _finishing = false;
 
   /// The Exercise to answer now, or null once every Exercise is answered correctly.
   Exercise? get current =>
@@ -137,16 +157,26 @@ final class LessonSession {
     return AnswerFeedback(correct: correct, correctAnswer: exercise.answer);
   }
 
+  /// Records the finished Lesson and returns its result. Can be called once;
+  /// if saving fails it may be called again.
   Future<LessonResult> finish() async {
     if (_queue.isNotEmpty) {
       throw StateError('Lesson finished before every Exercise was answered');
     }
+    if (_finishing) throw StateError('Lesson already finished');
+    _finishing = true;
     final total = _lesson.exercises.length;
     final result = LessonResult(
       passed: _firstTryCorrect * 5 >= total * 4,
       firstTryPercent: _firstTryCorrect * 100 ~/ total,
+      xpEarned: _firstTryCorrect * xpPerFirstTryCorrect,
     );
-    await _onFinished(_lesson, result);
+    try {
+      await _onFinished(_lesson, result);
+    } catch (_) {
+      _finishing = false;
+      rethrow;
+    }
     return result;
   }
 }
