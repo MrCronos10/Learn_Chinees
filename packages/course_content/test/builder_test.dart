@@ -223,4 +223,31 @@ void main() {
 
     expect((await engine.lessonPath()).single.state, LessonState.passed);
   });
+
+  test(
+    'Words from a Passed Lesson come back for Review the next Day',
+    () async {
+      final clock = FixedClock(const Day(2026, 11, 10));
+      final engine = StudyEngine(
+        content: build(fixture, 'course.db'),
+        progress: InMemoryLearnerProgressStore(),
+        clock: clock,
+      );
+      final lesson = await engine.startLesson('fixture-lesson-1');
+      for (var e = lesson.current; e != null; e = lesson.current) {
+        lesson.answer(e.answer);
+      }
+      await lesson.finish();
+
+      clock.day = const Day(2026, 11, 11);
+      final review = (await engine.startReview())!;
+      final reviewed = <String>[];
+      for (var e = review.current; e != null; e = review.current) {
+        reviewed.add(e.word!.characters);
+        review.answer(e.answer);
+      }
+
+      expect(reviewed, unorderedEquals(['你好', '谢谢', '再见']));
+    },
+  );
 }

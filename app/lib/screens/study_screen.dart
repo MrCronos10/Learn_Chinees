@@ -1,43 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:study_engine/study_engine.dart';
 
-import 'results_screen.dart';
+/// Plays a Lesson or a Review, then shows its results in place (so "Try
+/// again" restarts here and the Lesson path refreshes once this screen
+/// closes). Closing it midway records nothing.
+class StudyScreen<R> extends StatefulWidget {
+  const StudyScreen({
+    super.key,
+    required this.start,
+    required this.results,
+    this.what = 'Lesson',
+  });
 
-/// Plays one Lesson, then shows its results in place (so "Try again" restarts
-/// here and the Lesson path refreshes once this screen closes). Closing it
-/// midway records nothing.
-class LessonScreen extends StatefulWidget {
-  const LessonScreen({super.key, required this.engine, required this.lessonId});
+  /// Starts a fresh session (again on "Try again").
+  final Future<StudySession<R>> Function() start;
 
-  final StudyEngine engine;
-  final String lessonId;
+  /// The results view, given the result, a restart callback and a close one.
+  final Widget Function(R result, VoidCallback again, VoidCallback done)
+  results;
+
+  /// What is being studied, for messages: "Lesson" or "Review".
+  final String what;
 
   @override
-  State<LessonScreen> createState() => _LessonScreenState();
+  State<StudyScreen<R>> createState() => _StudyScreenState<R>();
 }
 
-class _LessonScreenState extends State<LessonScreen> {
-  late Future<LessonSession> _session = _start();
+class _StudyScreenState<R> extends State<StudyScreen<R>> {
+  late Future<StudySession<R>> _session = widget.start();
   AnswerFeedback? _feedback;
-  LessonResult? _result;
+  R? _result;
   bool _finishing = false;
 
-  Future<LessonSession> _start() => widget.engine.startLesson(widget.lessonId);
-
-  void _answer(LessonSession session, String choice) {
+  void _answer(StudySession<R> session, String choice) {
     // Ignore a second tap that lands before feedback is shown.
     if (_feedback != null) return;
     setState(() => _feedback = session.answer(choice));
   }
 
-  Future<void> _continue(LessonSession session) async {
+  Future<void> _continue(StudySession<R> session) async {
     if (session.current != null) {
       setState(() => _feedback = null);
       return;
     }
     if (_finishing) return;
     _finishing = true;
-    final LessonResult result;
+    final R result;
     try {
       result = await session.finish();
     } catch (error) {
@@ -54,9 +62,9 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() => _result = result);
   }
 
-  void _tryAgain() {
+  void _again() {
     setState(() {
-      _session = _start();
+      _session = widget.start();
       _feedback = null;
       _result = null;
       _finishing = false;
@@ -67,11 +75,7 @@ class _LessonScreenState extends State<LessonScreen> {
   Widget build(BuildContext context) {
     final result = _result;
     if (result != null) {
-      return ResultsScreen(
-        result: result,
-        onTryAgain: _tryAgain,
-        onDone: () => Navigator.of(context).pop(),
-      );
+      return widget.results(result, _again, () => Navigator.of(context).pop());
     }
     return FutureBuilder(
       future: _session,
@@ -81,7 +85,7 @@ class _LessonScreenState extends State<LessonScreen> {
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.close),
-              tooltip: 'Quit Lesson',
+              tooltip: 'Quit ${widget.what}',
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: session == null
@@ -92,17 +96,17 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
           body: switch ((session, snapshot.error)) {
             (_, final Object error) => Center(
-              child: Text('Could not load Lesson: $error'),
+              child: Text('Could not load ${widget.what}: $error'),
             ),
             (null, _) => const Center(child: CircularProgressIndicator()),
-            (final LessonSession session, _) => _exerciseView(session),
+            (final StudySession<R> session, _) => _exerciseView(session),
           },
         );
       },
     );
   }
 
-  Widget _exerciseView(LessonSession session) {
+  Widget _exerciseView(StudySession<R> session) {
     final feedback = _feedback;
     // Once answered, the session has already moved on, so only the feedback
     // panel is shown until the Learner continues.

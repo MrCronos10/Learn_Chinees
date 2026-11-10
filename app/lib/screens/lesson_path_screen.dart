@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:study_engine/study_engine.dart';
 
-import 'lesson_screen.dart';
+import 'results_screen.dart';
+import 'study_screen.dart';
 
 /// Home: the Lesson path.
 class LessonPathScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _LessonPathScreenState extends State<LessonPathScreen>
   late Future<List<PathLesson>> _path = widget.engine.lessonPath();
   late Future<int> _totalXp = widget.engine.totalXp();
   late Future<int> _streak = widget.engine.currentStreak();
+  late Future<int> _wordsDue = widget.engine.wordsDueToday();
 
   @override
   void initState() {
@@ -43,18 +45,35 @@ class _LessonPathScreenState extends State<LessonPathScreen>
       _path = widget.engine.lessonPath();
       _totalXp = widget.engine.totalXp();
       _streak = widget.engine.currentStreak();
+      _wordsDue = widget.engine.wordsDueToday();
     });
   }
 
-  Future<void> _open(PathLesson lesson) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            LessonScreen(engine: widget.engine, lessonId: lesson.id),
-      ),
-    );
+  Future<void> _study(Widget screen) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen));
     _refresh();
   }
+
+  void _open(PathLesson lesson) => _study(
+    StudyScreen<LessonResult>(
+      start: () => widget.engine.startLesson(lesson.id),
+      results: (result, again, done) =>
+          ResultsScreen(result: result, onTryAgain: again, onDone: done),
+    ),
+  );
+
+  void _review() => _study(
+    StudyScreen<ReviewResult>(
+      what: 'Review',
+      start: () async =>
+          await widget.engine.startReview() ??
+          (throw StateError('Nothing is due for Review')),
+      results: (result, _, done) =>
+          ReviewResultsScreen(result: result, onDone: done),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +97,38 @@ class _LessonPathScreenState extends State<LessonPathScreen>
               ],
             ),
           ),
+          _reviewCard(),
           Expanded(child: _lessonList()),
         ],
       ),
+    );
+  }
+
+  Widget _reviewCard() {
+    return FutureBuilder(
+      future: _wordsDue,
+      builder: (context, snapshot) {
+        final due = snapshot.data;
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: const Icon(Icons.replay),
+            title: Text(switch (snapshot) {
+              AsyncSnapshot(hasError: true) => 'Could not load Review',
+              AsyncSnapshot(data: null) => 'Review',
+              AsyncSnapshot(data: 0) => 'Nothing due for Review today',
+              AsyncSnapshot(data: 1) => '1 Word due for Review',
+              AsyncSnapshot(:final data) => '$data Words due for Review',
+            }),
+            trailing: due != null && due > 0
+                ? FilledButton(
+                    onPressed: _review,
+                    child: const Text('Start Review'),
+                  )
+                : null,
+          ),
+        );
+      },
     );
   }
 

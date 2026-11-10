@@ -9,7 +9,7 @@ const words = [
   Word(id: 3, characters: '再见', pinyin: 'zàijiàn', meaning: 'goodbye'),
 ];
 
-StudyEngine fakeEngine() => StudyEngine(
+StudyEngine fakeEngine([Clock? clock]) => StudyEngine(
   content: InMemoryCourseContent([
     Lesson(
       id: 'lesson-1',
@@ -24,7 +24,7 @@ StudyEngine fakeEngine() => StudyEngine(
     ),
   ]),
   progress: InMemoryLearnerProgressStore(),
-  clock: FixedClock(const Day(2026, 11, 10)),
+  clock: clock ?? FixedClock(const Day(2026, 11, 10)),
 );
 
 /// The meaning of the Word currently shown on the Lesson screen.
@@ -49,8 +49,9 @@ void main() {
     await tester.pumpWidget(ChineseApp(engine: fakeEngine()));
     await tester.pumpAndSettle();
 
-    // Lesson path shows the one Lesson and no XP yet.
+    // Lesson path shows the one Lesson, no XP yet and nothing to review.
     expect(find.text('Saying hello'), findsOneWidget);
+    expect(find.text('Nothing due for Review today'), findsOneWidget);
     expect(find.text('0 XP'), findsOneWidget);
     expect(find.text('0-Day Streak'), findsOneWidget);
     await tester.tap(find.text('Saying hello'));
@@ -92,5 +93,45 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
     expect(find.text('50 XP'), findsOneWidget);
     expect(find.text('1-Day Streak'), findsOneWidget);
+  });
+
+  testWidgets('Words from a Passed Lesson can be reviewed the next Day', (
+    tester,
+  ) async {
+    final clock = FixedClock(const Day(2026, 11, 10));
+    await tester.pumpWidget(ChineseApp(engine: fakeEngine(clock)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Saying hello'));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 3; i++) {
+      await choose(tester, shownMeaning(tester));
+      await continueOn(tester);
+    }
+    await tester.tap(find.text('Back to Lessons'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing due for Review today'), findsOneWidget);
+
+    // The next Day, the app comes back from the background.
+    clock.day = const Day(2026, 11, 11);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text('3 Words due for Review'), findsOneWidget);
+
+    await tester.tap(find.text('Start Review'));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 3; i++) {
+      await choose(tester, shownMeaning(tester));
+      await continueOn(tester);
+    }
+    expect(find.text('Review done!'), findsOneWidget);
+    expect(find.text('+30 XP'), findsOneWidget);
+
+    await tester.tap(find.text('Back to Lessons'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing due for Review today'), findsOneWidget);
+    expect(find.text('60 XP'), findsOneWidget);
+    expect(find.text('2-Day Streak'), findsOneWidget);
   });
 }

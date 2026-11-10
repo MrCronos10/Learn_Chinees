@@ -23,12 +23,17 @@ sealed class Exercise {
 
   /// The choice that is correct.
   String get answer;
+
+  /// The Word this Exercise studies, if any; Words met in a Passed Lesson
+  /// enter Review.
+  Word? get word;
 }
 
 /// Shows a Word (characters + pinyin) and asks for its English meaning.
 final class MultipleChoiceExercise extends Exercise {
   const MultipleChoiceExercise({required this.word, required this.choices});
 
+  @override
   final Word word;
 
   @override
@@ -66,4 +71,9 @@ abstract interface class CourseContentReader {
 
   /// The Lesson with [lessonId], including its Exercises.
   Future<Lesson> lesson(String lessonId);
+
+  /// One Exercise to review each of [wordIds] with: the first Exercise on the
+  /// Lesson path that studies that Word. IDs no longer in the Course Content
+  /// (retired Words) are left out.
+  Future<Map<int, Exercise>> reviewExercises(Set<int> wordIds);
 }

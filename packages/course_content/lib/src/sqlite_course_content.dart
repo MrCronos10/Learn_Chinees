@@ -45,6 +45,27 @@ final class SqliteCourseContent implements CourseContentReader {
     );
   }
 
+  @override
+  Future<Map<int, Exercise>> reviewExercises(Set<int> wordIds) async {
+    if (wordIds.isEmpty) return {};
+    final placeholders = List.filled(wordIds.length, '?').join(', ');
+    final rows = _db.select(
+      'SELECT exercises.kind, exercises.choices, words.id, words.characters, '
+      'words.pinyin, words.meaning FROM exercises '
+      'JOIN words ON words.id = exercises.word_id '
+      'JOIN lessons ON lessons.id = exercises.lesson_id '
+      'JOIN units ON units.id = lessons.unit_id '
+      'WHERE exercises.word_id IN ($placeholders) '
+      'ORDER BY units.position, lessons.position, exercises.position',
+      wordIds.toList(),
+    );
+    final found = <int, Exercise>{};
+    for (final row in rows) {
+      found.putIfAbsent(row['id'] as int, () => _exercise(row));
+    }
+    return found;
+  }
+
   Exercise _exercise(Row row) {
     final kind = row['kind'] as String;
     if (kind != exerciseKindMultipleChoice) {
