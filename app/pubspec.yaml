@@ -1,0 +1,27 @@
+name: my_chinese_app
+description: "Learn everyday conversational Mandarin, starting with pinyin and tones."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  course_content:
+    path: ../packages/course_content
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  study_engine:
+    path: ../packages/study_engine
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/content/course.db

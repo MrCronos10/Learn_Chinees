@@ -1,2 +1,5 @@
 research/screens/
 .DS_Store
+.dart_tool/
+build/
+*.building

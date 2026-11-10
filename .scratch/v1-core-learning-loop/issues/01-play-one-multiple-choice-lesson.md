@@ -4,13 +4,17 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Content builder turns a small fixture source (one Lesson, ~3 Words) into a Course Content database, assigning each Word a permanent Word ID
-- [ ] App launches on iOS simulator to a Lesson path showing the one Lesson; Android build compiles
-- [ ] Multiple-choice Exercise shows a Word with characters + pinyin and asks for its meaning
-- [ ] Immediate feedback after each answer; correct answer shown when wrong
-- [ ] Exercises missed on first try are repeated at the end and do not change the mark
-- [ ] Results screen shows Passed Lesson (>= 80% first-try correct) or not, and the first-try percentage
-- [ ] Study engine tests (through its public interface only, fixed clock, in-memory stores) cover the 80% rule at the boundary (79/80/100%) and the repeat-at-end behaviour
-- [ ] One smoke widget test: app launches to the Lesson path and a Lesson can be finished end to end with fakes
+- [x] Content builder turns a small fixture source (one Lesson, ~3 Words) into a Course Content database, assigning each Word a permanent Word ID
+- [x] App launches on iOS simulator to a Lesson path showing the one Lesson; Android build compiles
+- [x] Multiple-choice Exercise shows a Word with characters + pinyin and asks for its meaning
+- [x] Immediate feedback after each answer; correct answer shown when wrong
+- [x] Exercises missed on first try are repeated at the end and do not change the mark
+- [x] Results screen shows Passed Lesson (>= 80% first-try correct) or not, and the first-try percentage
+- [x] Study engine tests (through its public interface only, fixed clock, in-memory stores) cover the 80% rule at the boundary (79/80/100%) and the repeat-at-end behaviour
+- [x] One smoke widget test: app launches to the Lesson path and a Lesson can be finished end to end with fakes
+
+## Comments
+
+Done. Layout: `packages/study_engine` (pure Dart engine + in-memory adapters), `packages/course_content` (content builder CLI `dart run course_content:build_content <source.json> <word_ids.json> <out.db>` + SQLite reader), `app/` (Flutter UI). Fixture source and Word ID registry live in `content/fixture/`; the built DB is committed at `app/assets/content/course.db`. Word ID registry keys on characters (unique in the source), so pinyin fixes keep the ID. Not fixed from review: on Windows, renaming the staged DB over an existing output fails (builds run on macOS).
