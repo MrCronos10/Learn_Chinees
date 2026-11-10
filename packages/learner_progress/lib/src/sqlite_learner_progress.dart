@@ -87,6 +87,14 @@ final class SqliteLearnerProgressStore implements LearnerProgressStore {
   };
 
   @override
+  Future<Set<Day>> studyDays() async => {
+    for (final row in _db.select(
+      'SELECT DISTINCT finished_on FROM finished_lessons',
+    ))
+      Day.parse(row['finished_on'] as String),
+  };
+
+  @override
   Future<int> totalXp() async =>
       _db
               .select(

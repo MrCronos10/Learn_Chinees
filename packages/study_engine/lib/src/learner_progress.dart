@@ -24,4 +24,8 @@ abstract interface class LearnerProgressStore {
   Future<Set<String>> passedLessonIds();
 
   Future<int> totalXp();
+
+  /// Every Day on which the Learner finished at least one Lesson (and, once
+  /// Review exists, a Review): the Days that count toward the Streak.
+  Future<Set<Day>> studyDays();
 }

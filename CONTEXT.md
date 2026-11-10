@@ -21,7 +21,7 @@ Points a Learner earns for each Exercise answered correctly on the first try, wh
 _Avoid_: Score, points, coins
 
 **Streak**:
-The count of consecutive Days on which a Learner completed at least one Lesson or Review.
+The count of consecutive Days on which a Learner completed at least one Lesson or Review. A failed Lesson counts; quitting midway does not. Until the Learner studies today, the Streak still shows the run ending yesterday; once a whole Day is missed it is 0.
 _Avoid_: Chain, daily count
 
 ## Course content

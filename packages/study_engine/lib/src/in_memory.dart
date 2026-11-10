@@ -1,4 +1,5 @@
 import 'course_content.dart';
+import 'day.dart';
 import 'learner_progress.dart';
 
 /// Course Content held in memory, for tests and fakes.
@@ -34,6 +35,11 @@ final class InMemoryLearnerProgressStore implements LearnerProgressStore {
   Future<Set<String>> passedLessonIds() async => {
     for (final lesson in _finished)
       if (lesson.passed) lesson.lessonId,
+  };
+
+  @override
+  Future<Set<Day>> studyDays() async => {
+    for (final lesson in _finished) lesson.day,
   };
 
   @override

@@ -52,6 +52,7 @@ void main() {
     // Lesson path shows the one Lesson and no XP yet.
     expect(find.text('Saying hello'), findsOneWidget);
     expect(find.text('0 XP'), findsOneWidget);
+    expect(find.text('0-Day Streak'), findsOneWidget);
     await tester.tap(find.text('Saying hello'));
     await tester.pumpAndSettle();
 
@@ -90,5 +91,6 @@ void main() {
     expect(find.text('Saying hello'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
     expect(find.text('50 XP'), findsOneWidget);
+    expect(find.text('1-Day Streak'), findsOneWidget);
   });
 }

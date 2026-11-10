@@ -110,6 +110,21 @@ final class StudyEngine {
   /// Total XP the Learner has earned.
   Future<int> totalXp() => _progress.totalXp();
 
+  /// Consecutive Days, ending today or yesterday, on which the Learner
+  /// finished at least one Lesson. Until today's study it still shows
+  /// yesterday's run; once a whole Day is missed it is 0.
+  Future<int> currentStreak() async {
+    final days = await _progress.studyDays();
+    final today = _clock.today();
+    var day = days.contains(today) ? today : today.addDays(-1);
+    var streak = 0;
+    while (days.contains(day)) {
+      streak++;
+      day = day.addDays(-1);
+    }
+    return streak;
+  }
+
   Future<void> _onFinished(Lesson lesson, LessonResult result) =>
       _progress.recordLessonFinished(
         FinishedLesson(
