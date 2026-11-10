@@ -12,3 +12,7 @@
 - [ ] CC-CEDICT, Tatoeba and Tone Recording sources each have an Acknowledgement
 - [ ] Fixture content no longer ships
 - [ ] Manual play-through on the iOS simulator: all 4 Lessons can be passed, Words appear in Review the next Day
+
+## Comments
+
+2026-11-11: Draft Word list in `unit-1-word-list.md` (19 Words, 4 Lessons), waiting for the developer's approval.

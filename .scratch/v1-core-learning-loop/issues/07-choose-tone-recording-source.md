@@ -18,3 +18,5 @@
 What would make it usable: written permission under CC BY 4.0 or CC BY-SA 4.0 (or explicit permission to bundle the files in a free app whose Course Content is shared under CC BY-SA), plus the exact attribution text. A non-commercial (NC) or no-derivatives (ND) license would not fit.
 
 Other sources checked and rejected: hugolpz/audio-cmn (unclear, possibly non-commercial license), davinfifield/mp3-chinese-pinyin-sound (unknown origin), Lingua Libre / Wikimedia Commons (CC BY-SA 4.0 but whole words, not syllables; only good for gaps), text-to-speech (ruled out by ADR-0002). Fallback if MSU declines or doesn't answer: record the syllables (own voice or a native speaker with a signed CC BY-SA 4.0 release).
+
+2026-11-11: Prepared `tone-recordings-plan.md` (12 syllables × 4 tones = 48 recordings for the draft Unit 1 Word list, the recordings list format, the Tone Perfect steps and the own-recordings script/checklist) so this ticket can close as soon as the source is settled.
