@@ -67,19 +67,24 @@ final class SqliteCourseContent implements CourseContentReader {
   }
 
   Exercise _exercise(Row row) {
-    final kind = row['kind'] as String;
-    if (kind != exerciseKindMultipleChoice) {
-      throw StateError('Unknown Exercise kind "$kind" in Course Content');
-    }
-    return MultipleChoiceExercise(
-      word: Word(
-        id: row['id'] as int,
-        characters: row['characters'] as String,
-        pinyin: row['pinyin'] as String,
-        meaning: row['meaning'] as String,
-      ),
-      choices: (jsonDecode(row['choices'] as String) as List).cast<String>(),
+    final word = Word(
+      id: row['id'] as int,
+      characters: row['characters'] as String,
+      pinyin: row['pinyin'] as String,
+      meaning: row['meaning'] as String,
     );
+    final choices = (jsonDecode(row['choices'] as String) as List)
+        .cast<String>();
+    return switch (row['kind'] as String) {
+      exerciseKindMultipleChoice => MultipleChoiceExercise(
+        word: word,
+        choices: choices,
+      ),
+      exerciseKindListening => ListeningExercise(word: word, choices: choices),
+      final kind => throw StateError(
+        'Unknown Exercise kind "$kind" in Course Content',
+      ),
+    };
   }
 
   void close() => _db.close();

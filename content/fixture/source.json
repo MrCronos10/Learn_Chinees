@@ -37,6 +37,10 @@
             {
               "kind": "multipleChoice",
               "word": "谢谢"
+            },
+            {
+              "kind": "listening",
+              "word": "你好"
             }
           ]
         }

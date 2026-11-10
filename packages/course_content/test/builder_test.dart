@@ -250,4 +250,22 @@ void main() {
       expect(reviewed, unorderedEquals(['你好', '谢谢', '再见']));
     },
   );
+
+  test('builds listening Exercises defined in the source', () async {
+    final source = File(p.join(dir.path, 'listening.json'))
+      ..writeAsStringSync(
+        File(fixture).readAsStringSync().replaceFirst(
+          '{ "kind": "multipleChoice", "word": "谢谢" }',
+          '{ "kind": "listening", "word": "谢谢" }',
+        ),
+      );
+    final content = build(source.path, 'course.db');
+
+    final exercise = (await content.lesson('fixture-lesson-1')).exercises[1];
+
+    expect(exercise, isA<ListeningExercise>());
+    expect(exercise.word!.characters, '谢谢');
+    expect(exercise.answer, 'thank you');
+    expect(exercise.choices, contains('thank you'));
+  });
 }

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:study_engine/study_engine.dart';
 
 import 'app.dart';
+import 'audio/device_audio_player.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +32,7 @@ Future<void> main() async {
     progress: progress,
     clock: const SystemClock(),
   );
-  runApp(ChineseApp(engine: engine));
+  runApp(ChineseApp(engine: engine, audio: DeviceAudioPlayer()));
 }
 
 /// Shown instead of a frozen launch screen if Course Content cannot load.

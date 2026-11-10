@@ -17,6 +17,7 @@ dependencies:
   path_provider: ^2.1.5
   study_engine:
     path: ../packages/study_engine
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:

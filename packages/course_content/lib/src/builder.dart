@@ -192,7 +192,7 @@ final class _Source {
         throw ContentBuildException('Lesson "${lesson.id}" has no Exercises');
       }
       for (final exercise in lesson.exercises) {
-        if (exercise.kind != exerciseKindMultipleChoice) {
+        if (!wordExerciseKinds.contains(exercise.kind)) {
           throw ContentBuildException(
             'Lesson "${lesson.id}" has an Exercise of unknown kind '
             '"${exercise.kind}"',
@@ -203,7 +203,7 @@ final class _Source {
     }
     if (words.map((w) => w.meaning).toSet().length < 2) {
       throw ContentBuildException(
-        'Multiple-choice Exercises need at least two Words with different '
+        'Exercises need at least two Words with different '
         'meanings',
       );
     }

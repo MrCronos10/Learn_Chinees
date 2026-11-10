@@ -21,9 +21,7 @@ void main() {
         'CREATE TABLE passed_lessons '
         '(lesson_id TEXT PRIMARY KEY, passed_on TEXT NOT NULL)',
       )
-      ..execute(
-        "INSERT INTO passed_lessons VALUES ('lesson-1', '2026-11-09')",
-      )
+      ..execute("INSERT INTO passed_lessons VALUES ('lesson-1', '2026-11-09')")
       ..userVersion = 1
       ..close();
 

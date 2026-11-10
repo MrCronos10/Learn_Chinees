@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:study_engine/study_engine.dart';
 
+import '../audio/audio_player.dart';
+
 /// Plays a Lesson or a Review, then shows its results in place (so "Try
 /// again" restarts here and the Lesson path refreshes once this screen
 /// closes). Closing it midway records nothing.
 class StudyScreen<R> extends StatefulWidget {
   const StudyScreen({
     super.key,
+    required this.audio,
     required this.start,
     required this.results,
     this.what = 'Lesson',
   });
+
+  final AudioPlayer audio;
 
   /// Starts a fresh session (again on "Try again").
   final Future<StudySession<R>> Function() start;
@@ -32,6 +37,10 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
   R? _result;
   bool _finishing = false;
 
+  /// Counts Exercises shown, so a repeated Exercise gets a fresh prompt
+  /// (and plays its audio again).
+  int _shown = 0;
+
   void _answer(StudySession<R> session, String choice) {
     // Ignore a second tap that lands before feedback is shown.
     if (_feedback != null) return;
@@ -40,7 +49,10 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
 
   Future<void> _continue(StudySession<R> session) async {
     if (session.current != null) {
-      setState(() => _feedback = null);
+      setState(() {
+        _feedback = null;
+        _shown++;
+      });
       return;
     }
     if (_finishing) return;
@@ -68,6 +80,7 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
       _feedback = null;
       _result = null;
       _finishing = false;
+      _shown++;
     });
   }
 
@@ -117,10 +130,21 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (feedback == null && exercise is MultipleChoiceExercise) ...[
-              const Text('What does this mean?', textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              _WordCard(word: exercise.word),
+            if (feedback == null && exercise != null) ...[
+              switch (exercise) {
+                MultipleChoiceExercise(:final word) => Column(
+                  children: [
+                    const Text('What does this mean?'),
+                    const SizedBox(height: 24),
+                    _WordCard(word: word),
+                  ],
+                ),
+                ListeningExercise(:final word) => _ListeningPrompt(
+                  key: ValueKey(_shown),
+                  word: word,
+                  audio: widget.audio,
+                ),
+              },
               const Spacer(),
               for (final choice in exercise.choices)
                 Padding(
@@ -143,6 +167,59 @@ class _StudyScreenState<R> extends State<StudyScreen<R>> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Plays the Word when shown, offers a replay, and explains clearly when
+/// the device has no Chinese voice instead of staying silent.
+class _ListeningPrompt extends StatefulWidget {
+  const _ListeningPrompt({super.key, required this.word, required this.audio});
+
+  final Word word;
+  final AudioPlayer audio;
+
+  @override
+  State<_ListeningPrompt> createState() => _ListeningPromptState();
+}
+
+class _ListeningPromptState extends State<_ListeningPrompt> {
+  bool _noVoice = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _play();
+  }
+
+  Future<void> _play() async {
+    final spoke = await widget.audio.speakWord(widget.word);
+    if (mounted && !spoke) setState(() => _noVoice = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Column(
+      children: [
+        const Text('What did you hear?'),
+        const SizedBox(height: 24),
+        if (_noVoice) ...[
+          Text(
+            'No Chinese voice is installed on this device, so the Word '
+            'cannot be played. Add a Chinese (Mandarin) voice in your '
+            "device's speech settings. Until then, here is its pinyin:",
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(widget.word.pinyin, style: text.titleLarge),
+        ] else
+          FilledButton.tonalIcon(
+            onPressed: _play,
+            icon: const Icon(Icons.volume_up),
+            label: const Text('Play again'),
+          ),
+      ],
     );
   }
 }

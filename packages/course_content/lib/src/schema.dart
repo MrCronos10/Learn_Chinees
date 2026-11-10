@@ -29,3 +29,7 @@ CREATE TABLE exercises (
 ''';
 
 const exerciseKindMultipleChoice = 'multipleChoice';
+const exerciseKindListening = 'listening';
+
+/// Exercise kinds that study one Word and offer its meaning among choices.
+const wordExerciseKinds = {exerciseKindMultipleChoice, exerciseKindListening};

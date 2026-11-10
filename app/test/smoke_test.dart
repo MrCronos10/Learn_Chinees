@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_chinese_app/app.dart';
 import 'package:study_engine/study_engine.dart';
 
+import 'fake_audio_player.dart';
+
 const words = [
   Word(id: 1, characters: '你好', pinyin: 'nǐ hǎo', meaning: 'hello'),
   Word(id: 2, characters: '谢谢', pinyin: 'xièxie', meaning: 'thank you'),
@@ -46,7 +48,9 @@ void main() {
   testWidgets('launches to the Lesson path and finishes a Lesson end to end', (
     tester,
   ) async {
-    await tester.pumpWidget(ChineseApp(engine: fakeEngine()));
+    await tester.pumpWidget(
+      ChineseApp(engine: fakeEngine(), audio: FakeAudioPlayer()),
+    );
     await tester.pumpAndSettle();
 
     // Lesson path shows the one Lesson, no XP yet and nothing to review.
@@ -99,7 +103,9 @@ void main() {
     tester,
   ) async {
     final clock = FixedClock(const Day(2026, 11, 10));
-    await tester.pumpWidget(ChineseApp(engine: fakeEngine(clock)));
+    await tester.pumpWidget(
+      ChineseApp(engine: fakeEngine(clock), audio: FakeAudioPlayer()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Saying hello'));

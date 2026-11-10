@@ -43,6 +43,21 @@ final class MultipleChoiceExercise extends Exercise {
   String get answer => word.meaning;
 }
 
+/// Plays a Word aloud (device speech engine; ADR-0002) and asks for its
+/// English meaning. The Word itself is not shown until answered.
+final class ListeningExercise extends Exercise {
+  const ListeningExercise({required this.word, required this.choices});
+
+  @override
+  final Word word;
+
+  @override
+  final List<String> choices;
+
+  @override
+  String get answer => word.meaning;
+}
+
 /// A Lesson as listed on the Lesson path.
 final class LessonSummary {
   const LessonSummary({required this.id, required this.title});

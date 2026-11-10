@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:study_engine/study_engine.dart';
 
+import '../audio/audio_player.dart';
+
 import 'results_screen.dart';
 import 'study_screen.dart';
 
 /// Home: the Lesson path.
 class LessonPathScreen extends StatefulWidget {
-  const LessonPathScreen({super.key, required this.engine});
+  const LessonPathScreen({
+    super.key,
+    required this.engine,
+    required this.audio,
+  });
 
   final StudyEngine engine;
+  final AudioPlayer audio;
 
   @override
   State<LessonPathScreen> createState() => _LessonPathScreenState();
@@ -58,6 +65,7 @@ class _LessonPathScreenState extends State<LessonPathScreen>
 
   void _open(PathLesson lesson) => _study(
     StudyScreen<LessonResult>(
+      audio: widget.audio,
       start: () => widget.engine.startLesson(lesson.id),
       results: (result, again, done) =>
           ResultsScreen(result: result, onTryAgain: again, onDone: done),
@@ -66,6 +74,7 @@ class _LessonPathScreenState extends State<LessonPathScreen>
 
   void _review() => _study(
     StudyScreen<ReviewResult>(
+      audio: widget.audio,
       what: 'Review',
       start: () async =>
           await widget.engine.startReview() ??
