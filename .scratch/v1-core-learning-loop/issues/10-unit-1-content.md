@@ -10,7 +10,7 @@
 - [ ] Unit 1 has 4 Lessons along a fixed path; Lesson 1 starts with the four tones
 - [ ] Multiple-choice, listening and tone Exercises all appear in the Unit
 - [ ] CC-CEDICT, Tatoeba and Tone Recording sources each have an Acknowledgement
-- [ ] Fixture content no longer ships
+- [x] Fixture content no longer ships
 - [ ] Manual play-through on the iOS simulator: all 4 Lessons can be passed, Words appear in Review the next Day
 
 ## Comments
@@ -18,3 +18,13 @@
 2026-11-11: Draft Word list in `unit-1-word-list.md` (19 Words, 4 Lessons), waiting for the developer's approval.
 
 2026-11-11: The developer approved the Word list as drafted (Words, Lesson titles, and 他/她 together in Lesson 3).
+
+2026-11-12: Audio-free part built ahead of 08/07 (developer's request).
+- Unit 1 in `content/unit-1/source.json`: the approved 19 Words and 4 Lessons, with multiple-choice and listening Exercises in every Lesson. Tone Exercises (Lesson 1's opening and the tone drills) are added once ticket 07 supplies Tone Recordings.
+- CC-CEDICT: Words marked `"source": "cc-cedict"` take pinyin (converted to tone marks) and meaning from it; the approved short meanings and three approved spellings (nǐ hǎo, bú kèqi, méi guānxi) are kept as overrides. Only a 19-entry extract with the license header is committed (`cedict_extract.u8`); it builds the same content as the full file. Acknowledgement: CC-CEDICT, MDBG and contributors, CC BY-SA 4.0.
+- Tatoeba: left out by the developer's decision (2026-11-12): v1 has no Exercise that shows a sentence, so the app does not credit a source it never uses. It comes back with a future sentence Exercise.
+- Lesson ID registry: `content/ids.json` (moved from the fixture's `word_ids.json`, so Word IDs 1–5 carry over). A Lesson that was built before cannot silently disappear; removing one means listing it under `retiredLessons`, and a retired id is never used again. The fixture Lessons are retired.
+- Builder CLI now takes named options: `--cedict`, `--tone-recordings`. See `content/README.md`.
+- Checked on the iOS simulator: the Lesson path shows the 4 Unit 1 Lessons in order; existing Learner Progress (XP, Streak) survived the content replacement.
+Still open: tone Exercises (07/08), the Acknowledgement for Tone Recordings, and the full play-through of all 4 Lessons with Review the next Day.
+

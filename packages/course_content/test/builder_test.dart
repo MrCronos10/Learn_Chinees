@@ -184,6 +184,78 @@ void main() {
     expect(before.values, isNot(contains(after['早上好'])));
   });
 
+  group('Lesson ID registry', () {
+    /// The fixture with its Lesson's id changed to [id].
+    File withLessonId(String id) =>
+        File(p.join(dir.path, '$id.json'))..writeAsStringSync(
+          File(fixture).readAsStringSync().replaceFirst(
+            '"id": "fixture-lesson-1"',
+            '"id": "$id"',
+          ),
+        );
+
+    /// Marks [ids] as retired in the registry, as a content author would.
+    void retire(List<String> ids) {
+      final root =
+          jsonDecode(File(registry).readAsStringSync()) as Map<String, Object?>;
+      root['retiredLessons'] = ids;
+      File(registry).writeAsStringSync(jsonEncode(root));
+    }
+
+    test('the build fails when a Lesson from an earlier build is missing, '
+        'so a renamed Lesson cannot drop Learners\' passes', () {
+      build(fixture, 'first.db');
+
+      expect(
+        () => build(withLessonId('renamed').path, 'second.db'),
+        throwsA(
+          isA<ContentBuildException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('fixture-lesson-1'), contains('retiredLessons')),
+          ),
+        ),
+      );
+    });
+
+    test('a retired Lesson may be removed', () async {
+      build(fixture, 'first.db');
+      retire(['fixture-lesson-1']);
+
+      final content = build(withLessonId('replacement').path, 'second.db');
+
+      expect((await content.lessonPath()).single.id, 'replacement');
+    });
+
+    test('a retired Lesson ID is never used again', () {
+      build(fixture, 'first.db');
+      retire(['fixture-lesson-1']);
+      build(withLessonId('replacement').path, 'second.db');
+
+      expect(
+        () => build(fixture, 'third.db'),
+        throwsA(
+          isA<ContentBuildException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('fixture-lesson-1'), contains('retired')),
+          ),
+        ),
+      );
+    });
+
+    test('a failed build leaves the registry unchanged', () {
+      build(fixture, 'first.db');
+      final before = File(registry).readAsStringSync();
+
+      expect(
+        () => build(withLessonId('renamed').path, 'second.db'),
+        throwsA(isA<ContentBuildException>()),
+      );
+      expect(File(registry).readAsStringSync(), before);
+    });
+  });
+
   test('Learner Progress survives replacing the Course Content database '
       'with a rebuilt one', () async {
     final progressPath = p.join(dir.path, 'learner_progress.db');
@@ -557,6 +629,221 @@ void main() {
       );
 
       expect(() => buildTones(source, recordings()), failsWith(['tone']));
+    });
+  });
+
+  group('CC-CEDICT', () {
+    const cedictAck = {
+      'id': 'cc-cedict',
+      'name': 'CC-CEDICT',
+      'author': 'MDBG',
+      'license': 'CC BY-SA 4.0',
+      'url': 'https://cc-cedict.org/',
+    };
+
+    late File cedict;
+    setUp(() {
+      cedict = File(p.join(dir.path, 'cedict.u8'))
+        ..writeAsStringSync('''
+# CC-CEDICT
+# License: Creative Commons Attribution-ShareAlike 4.0 International License
+你好 你好 [ni3 hao3] /hello/hi/
+謝謝 谢谢 [xie4 xie5] /to thank/thanks/thank you/
+嗎 吗 [ma2] /(coll.) what?/
+嗎 吗 [ma5] /(question particle for "yes-no" questions)/
+女 女 [nu:3] /female/woman/
+''');
+    });
+
+    /// One Lesson studying [words], each given as its source entry.
+    File sourceWith(List<Map<String, Object>> words) =>
+        File(p.join(dir.path, 'cedict_source.json'))..writeAsStringSync(
+          jsonEncode({
+            'acknowledgements': [cedictAck],
+            'units': [
+              {
+                'id': 'u',
+                'title': 'Unit',
+                'lessons': [
+                  {
+                    'id': 'l',
+                    'title': 'Lesson',
+                    'exercises': [
+                      for (final w in words)
+                        {'kind': 'multipleChoice', 'word': w['characters']},
+                    ],
+                  },
+                ],
+              },
+            ],
+            'words': words,
+          }),
+        );
+
+    Future<Map<String, (String, String)>> wordsBuiltFrom(File source) async {
+      final output = p.join(dir.path, 'cedict.db');
+      buildCourseContent(
+        sourcePath: source.path,
+        registryPath: registry,
+        outputPath: output,
+        cedictPath: cedict.path,
+      );
+      final content = SqliteCourseContent.open(output);
+      addTearDown(content.close);
+      return {
+        for (final e in (await content.lesson('l')).exercises)
+          e.word!.characters: (e.word!.pinyin, e.word!.meaning),
+      };
+    }
+
+    Matcher failsWith(List<String> parts) => throwsA(
+      isA<ContentBuildException>().having(
+        (e) => e.message,
+        'message',
+        allOf([for (final part in parts) contains(part)]),
+      ),
+    );
+
+    test('a Word from CC-CEDICT takes its pinyin, with tone marks, and its '
+        'first meaning', () async {
+      final words = await wordsBuiltFrom(
+        sourceWith([
+          {'characters': '你好', 'source': 'cc-cedict'},
+          {'characters': '女', 'source': 'cc-cedict'},
+          {'characters': '谢谢', 'source': 'cc-cedict', 'meaning': 'thank you'},
+        ]),
+      );
+
+      expect(words['你好'], ('nǐhǎo', 'hello'));
+      expect(words['女'], ('nǚ', 'female'), reason: 'u: is ü');
+      expect(words['谢谢'], ('xièxie', 'thank you'), reason: 'neutral tone');
+    });
+
+    test('the author may override the pinyin, e.g. for tone sandhi or '
+        'spacing', () async {
+      final words = await wordsBuiltFrom(
+        sourceWith([
+          {'characters': '你好', 'source': 'cc-cedict', 'pinyin': 'nǐ hǎo'},
+          {'characters': '女', 'source': 'cc-cedict'},
+        ]),
+      );
+
+      expect(words['你好'], ('nǐ hǎo', 'hello'));
+    });
+
+    test(
+      'a Word with several CC-CEDICT entries must name the one it means',
+      () async {
+        expect(
+          () => wordsBuiltFrom(
+            sourceWith([
+              {'characters': '吗', 'source': 'cc-cedict'},
+              {'characters': '女', 'source': 'cc-cedict'},
+            ]),
+          ),
+          failsWith(['吗', 'ma2', 'ma5', 'cedictPinyin']),
+        );
+
+        final words = await wordsBuiltFrom(
+          sourceWith([
+            {'characters': '吗', 'source': 'cc-cedict', 'cedictPinyin': 'ma5'},
+            {'characters': '女', 'source': 'cc-cedict'},
+          ]),
+        );
+        expect(words['吗'], (
+          'ma',
+          '(question particle for "yes-no" questions)',
+        ));
+      },
+    );
+
+    test('a variant form of the same characters does not make a Word '
+        'ambiguous', () async {
+      cedict.writeAsStringSync(
+        '${cedict.readAsStringSync()}'
+        '妳 你 [ni3] /you (to a woman)/\n'
+        '你 你 [ni3] /you/\n'
+        '呌 叫 [jiao4] /variant of 叫[jiao4]/\n'
+        '叫 叫 [jiao4] /to be called/\n',
+      );
+
+      final words = await wordsBuiltFrom(
+        sourceWith([
+          {'characters': '你', 'source': 'cc-cedict'},
+          {'characters': '叫', 'source': 'cc-cedict'},
+        ]),
+      );
+
+      expect(words['你'], ('nǐ', 'you'));
+      expect(words['叫'], ('jiào', 'to be called'));
+    });
+
+    test('an extract keeps the license header and exactly the entries the '
+        'source uses, unchanged', () {
+      final extract = File(p.join(dir.path, 'extract.u8'));
+
+      extractCedict(
+        sourcePath: sourceWith([
+          {'characters': '你好', 'source': 'cc-cedict'},
+          {'characters': '吗', 'source': 'cc-cedict', 'cedictPinyin': 'ma5'},
+          {'characters': '我', 'pinyin': 'wǒ', 'meaning': 'I'},
+        ]).path,
+        cedictPath: cedict.path,
+        outputPath: extract.path,
+      );
+
+      final lines = extract.readAsLinesSync();
+      expect(lines, contains('# CC-CEDICT'));
+      expect(
+        lines,
+        contains(
+          '# License: Creative Commons Attribution-ShareAlike 4.0 '
+          'International License',
+        ),
+      );
+      expect(lines.where((l) => !l.startsWith('#')), [
+        '你好 你好 [ni3 hao3] /hello/hi/',
+        '嗎 吗 [ma5] /(question particle for "yes-no" questions)/',
+      ]);
+    });
+
+    test('the build fails when a Word is not in CC-CEDICT', () {
+      expect(
+        () => wordsBuiltFrom(
+          sourceWith([
+            {'characters': '你好', 'source': 'cc-cedict'},
+            {'characters': '字典里没有', 'source': 'cc-cedict'},
+          ]),
+        ),
+        failsWith(['字典里没有', 'CC-CEDICT']),
+      );
+    });
+
+    test('the build fails when Words come from CC-CEDICT but no CC-CEDICT '
+        'file is given', () {
+      expect(
+        () => buildCourseContent(
+          sourcePath: sourceWith([
+            {'characters': '你好', 'source': 'cc-cedict'},
+            {'characters': '女', 'source': 'cc-cedict'},
+          ]).path,
+          registryPath: registry,
+          outputPath: p.join(dir.path, 'x.db'),
+        ),
+        failsWith(['你好', 'CC-CEDICT']),
+      );
+    });
+
+    test('a Word not from a source must give its own pinyin and meaning', () {
+      expect(
+        () => wordsBuiltFrom(
+          sourceWith([
+            {'characters': '你好'},
+            {'characters': '女', 'source': 'cc-cedict'},
+          ]),
+        ),
+        failsWith(['你好', 'pinyin']),
+      );
     });
   });
 }

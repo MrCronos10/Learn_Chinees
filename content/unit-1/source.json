@@ -1,0 +1,249 @@
+{
+  "acknowledgements": [
+    {
+      "id": "cc-cedict",
+      "name": "CC-CEDICT",
+      "author": "MDBG and the CC-CEDICT contributors",
+      "license": "CC BY-SA 4.0",
+      "url": "https://cc-cedict.org/wiki/"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit-1",
+      "title": "Greetings & introductions",
+      "lessons": [
+        {
+          "id": "u1-tones-and-hello",
+          "title": "The four tones & hello",
+          "exercises": [
+            {
+              "kind": "multipleChoice",
+              "word": "你"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "好"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "你好"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "我"
+            },
+            {
+              "kind": "listening",
+              "word": "你好"
+            }
+          ]
+        },
+        {
+          "id": "u1-thanks-and-goodbye",
+          "title": "Please, thanks and goodbye",
+          "exercises": [
+            {
+              "kind": "multipleChoice",
+              "word": "谢谢"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "不客气"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "对不起"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "没关系"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "再见"
+            },
+            {
+              "kind": "listening",
+              "word": "谢谢"
+            },
+            {
+              "kind": "listening",
+              "word": "再见"
+            }
+          ]
+        },
+        {
+          "id": "u1-who-is-it",
+          "title": "Who is it?",
+          "exercises": [
+            {
+              "kind": "multipleChoice",
+              "word": "是"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "不"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "他"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "她"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "老师"
+            },
+            {
+              "kind": "listening",
+              "word": "是"
+            },
+            {
+              "kind": "listening",
+              "word": "老师"
+            }
+          ]
+        },
+        {
+          "id": "u1-whats-your-name",
+          "title": "What's your name?",
+          "exercises": [
+            {
+              "kind": "multipleChoice",
+              "word": "叫"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "名字"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "什么"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "很"
+            },
+            {
+              "kind": "multipleChoice",
+              "word": "吗"
+            },
+            {
+              "kind": "listening",
+              "word": "名字"
+            },
+            {
+              "kind": "listening",
+              "word": "什么"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "words": [
+    {
+      "characters": "你",
+      "source": "cc-cedict",
+      "meaning": "you"
+    },
+    {
+      "characters": "好",
+      "source": "cc-cedict",
+      "meaning": "good, well",
+      "cedictPinyin": "hao3"
+    },
+    {
+      "characters": "你好",
+      "source": "cc-cedict",
+      "meaning": "hello",
+      "pinyin": "nǐ hǎo"
+    },
+    {
+      "characters": "我",
+      "source": "cc-cedict",
+      "meaning": "I, me"
+    },
+    {
+      "characters": "谢谢",
+      "source": "cc-cedict",
+      "meaning": "thank you"
+    },
+    {
+      "characters": "不客气",
+      "source": "cc-cedict",
+      "meaning": "you're welcome",
+      "pinyin": "bú kèqi"
+    },
+    {
+      "characters": "对不起",
+      "source": "cc-cedict",
+      "meaning": "sorry"
+    },
+    {
+      "characters": "没关系",
+      "source": "cc-cedict",
+      "meaning": "it doesn't matter",
+      "pinyin": "méi guānxi"
+    },
+    {
+      "characters": "再见",
+      "source": "cc-cedict",
+      "meaning": "goodbye"
+    },
+    {
+      "characters": "是",
+      "source": "cc-cedict",
+      "meaning": "to be (am, is, are)"
+    },
+    {
+      "characters": "不",
+      "source": "cc-cedict",
+      "meaning": "not, no"
+    },
+    {
+      "characters": "他",
+      "source": "cc-cedict",
+      "meaning": "he, him"
+    },
+    {
+      "characters": "她",
+      "source": "cc-cedict",
+      "meaning": "she, her"
+    },
+    {
+      "characters": "老师",
+      "source": "cc-cedict",
+      "meaning": "teacher"
+    },
+    {
+      "characters": "叫",
+      "source": "cc-cedict",
+      "meaning": "to be called"
+    },
+    {
+      "characters": "名字",
+      "source": "cc-cedict",
+      "meaning": "name"
+    },
+    {
+      "characters": "什么",
+      "source": "cc-cedict",
+      "meaning": "what"
+    },
+    {
+      "characters": "很",
+      "source": "cc-cedict",
+      "meaning": "very"
+    },
+    {
+      "characters": "吗",
+      "source": "cc-cedict",
+      "meaning": "(question particle)",
+      "cedictPinyin": "ma5"
+    }
+  ]
+}

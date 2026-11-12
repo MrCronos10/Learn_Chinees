@@ -23,10 +23,13 @@ const _distractorCount = 3;
 
 /// Builds the read-only Course Content database from source files.
 ///
-/// [registryPath] is the Word ID registry: it is read if present and
+/// [registryPath] is the ID registry of Words and Lessons: it is read if present and
 /// rewritten with any newly assigned IDs. Entries are never removed, so a
 /// Word ID is never reused (ADR-0001). [recordingsPath] is the Tone
-/// Recordings list, needed when any Lesson has tone Exercises; its audio
+/// Recordings list, needed when any Lesson has tone Exercises. [cedictPath]
+/// is a CC-CEDICT file (or an extract in its format), needed when any Word
+/// has `"source": "cc-cedict"`: such a Word takes its pinyin and first
+/// meaning from it unless the source gives its own. The Tone Recordings list's its audio
 /// files are copied into a `tones` folder next to [outputPath]. An existing
 /// file at [outputPath] is replaced only after the source validates and the
 /// database is written.
@@ -35,17 +38,20 @@ void buildCourseContent({
   required String registryPath,
   required String outputPath,
   String? recordingsPath,
+  String? cedictPath,
 }) {
   final _Source source;
-  final _WordIdRegistry registry;
+  final _IdRegistry registry;
   final List<_SourceRecording> recordings;
   try {
-    source = _Source.parse(File(sourcePath).readAsStringSync());
+    final cedict = cedictPath == null ? null : _Cedict.load(File(cedictPath));
+    source = _Source.parse(File(sourcePath).readAsStringSync(), cedict);
     recordings = recordingsPath == null
         ? const []
         : _SourceRecording.parseList(File(recordingsPath));
     source.validateRecordings(recordings);
-    registry = _WordIdRegistry.load(File(registryPath));
+    registry = _IdRegistry.load(File(registryPath))
+      ..checkLessons(source.units.expand((u) => u.lessons).map((l) => l.id));
   } on ContentBuildException {
     rethrow;
   } on FileSystemException catch (e) {
@@ -202,6 +208,176 @@ List<String> _shuffledTones(String key) {
   return List.of(_toneChoices)..shuffle(Random(seed));
 }
 
+/// Writes to [outputPath] an extract of the CC-CEDICT file at [cedictPath]:
+/// its header with the license, then, unchanged, exactly the entries the
+/// Words of the source at [sourcePath] take from CC-CEDICT. Building from the
+/// extract gives the same Words as building from the full file.
+void extractCedict({
+  required String sourcePath,
+  required String cedictPath,
+  required String outputPath,
+}) {
+  final lines = <String>[];
+  try {
+    final cedict = _Cedict.load(File(cedictPath));
+    final root = jsonDecode(File(sourcePath).readAsStringSync());
+    lines.addAll(cedict.header);
+    lines.addAll([
+      '#',
+      '# Extract: only the entries this course uses, copied unchanged from',
+      '# the full CC-CEDICT file (content/README.md says how to regenerate).',
+    ]);
+    final entries = <String>{};
+    for (final w in _Source._list(root, 'words')) {
+      if (_Source._optionalString(w, 'source') != cedictSourceId) continue;
+      entries.add(
+        cedict
+            .entryFor(
+              _Source._string(w, 'characters'),
+              _Source._optionalString(w, 'cedictPinyin'),
+            )
+            .line,
+      );
+    }
+    lines.addAll(entries);
+  } on FileSystemException catch (e) {
+    throw ContentBuildException('Cannot read ${e.path}: ${e.message}');
+  } on FormatException catch (e) {
+    throw ContentBuildException('Invalid JSON: ${e.message}');
+  }
+  File(outputPath).writeAsStringSync('${lines.join('\n')}\n');
+}
+
+/// The Acknowledgement id that marks a Word as taken from CC-CEDICT.
+const cedictSourceId = 'cc-cedict';
+
+/// One CC-CEDICT entry: `Traditional Simplified [pin1 yin1] /def/def/`.
+final class _CedictEntry {
+  _CedictEntry(
+    this.line,
+    this.traditional,
+    this.simplified,
+    this.pinyin,
+    this.definitions,
+  );
+
+  /// The entry exactly as written in CC-CEDICT.
+  final String line;
+  final String traditional;
+  final String simplified;
+
+  /// As written in CC-CEDICT, with tone numbers (e.g. `ni3 hao3`).
+  final String pinyin;
+  final List<String> definitions;
+
+  /// The pinyin with tone marks, syllables joined (e.g. `nǐhǎo`); `5` is the
+  /// neutral tone, `u:` is `ü`, and an apostrophe separates a syllable
+  /// starting with a, e or o.
+  String get markedPinyin {
+    final syllables = pinyin.toLowerCase().replaceAll('u:', 'v').split(' ');
+    final out = StringBuffer();
+    for (final (i, syllable) in syllables.indexed) {
+      final number = int.tryParse(syllable.substring(syllable.length - 1));
+      final base = number == null
+          ? syllable
+          : syllable.substring(0, syllable.length - 1);
+      final tone = number == null ? null : Tone.fromNumber(number);
+      if (!isPlainPinyin(base) ||
+          (number != null && number != 5 && tone == null)) {
+        throw ContentBuildException(
+          'CC-CEDICT pinyin "$pinyin" for "$simplified" cannot be converted; '
+          'give the Word its own "pinyin"',
+        );
+      }
+      if (i > 0 && 'aeo'.contains(base[0])) out.write("'");
+      out.write(
+        tone == null ? base.replaceAll('v', 'ü') : tonedPinyin(base, tone),
+      );
+    }
+    return out.toString();
+  }
+}
+
+/// CC-CEDICT entries by simplified characters.
+final class _Cedict {
+  _Cedict(this.header, this._entries);
+
+  /// The comment lines at the top of the file, including its license.
+  final List<String> header;
+  final Map<String, List<_CedictEntry>> _entries;
+
+  static final _line = RegExp(r'^(\S+) (\S+) \[([^\]]*)\] /(.*)/\s*$');
+
+  static _Cedict load(File file) {
+    final entries = <String, List<_CedictEntry>>{};
+    final header = <String>[];
+    for (final (i, line) in file.readAsLinesSync().indexed) {
+      if (line.startsWith('#')) {
+        if (entries.isEmpty) header.add(line);
+        continue;
+      }
+      if (line.isEmpty) continue;
+      final match = _line.firstMatch(line);
+      if (match == null) {
+        throw ContentBuildException(
+          '${file.path} line ${i + 1} is not a CC-CEDICT entry: $line',
+        );
+      }
+      final entry = _CedictEntry(
+        line,
+        match[1]!,
+        match[2]!,
+        match[3]!,
+        match[4]!.split('/'),
+      );
+      entries.putIfAbsent(entry.simplified, () => []).add(entry);
+    }
+    return _Cedict(header, entries);
+  }
+
+  /// The entry for [characters]. [pinyin] picks a reading when there are
+  /// several; "variant of" entries are skipped, and among entries of the same
+  /// reading the one written the same in traditional characters is preferred
+  /// (so 你 means 你, not its variant 妳).
+  _CedictEntry entryFor(String characters, String? pinyin) {
+    final all = _entries[characters] ?? const <_CedictEntry>[];
+    if (all.isEmpty) {
+      throw ContentBuildException('Word "$characters" is not in CC-CEDICT');
+    }
+    var found = [
+      for (final e in all)
+        if (!e.definitions.any((d) => d.startsWith('variant of '))) e,
+    ];
+    if (pinyin != null) {
+      found = [
+        for (final e in found)
+          if (e.pinyin == pinyin) e,
+      ];
+      if (found.isEmpty) {
+        throw ContentBuildException(
+          'Word "$characters" has no CC-CEDICT entry [$pinyin]; it has '
+          '${all.map((e) => e.pinyin).toSet().join(', ')}',
+        );
+      }
+    }
+    if (found.map((e) => e.pinyin).toSet().length == 1 && found.length > 1) {
+      final same = [
+        for (final e in found)
+          if (e.traditional == characters) e,
+      ];
+      if (same.length == 1) found = same;
+    }
+    if (found.length > 1) {
+      throw ContentBuildException(
+        'Word "$characters" has ${found.length} CC-CEDICT entries '
+        '(${found.map((e) => e.pinyin).join(', ')}); add "cedictPinyin" '
+        'naming the one it means',
+      );
+    }
+    return found.single;
+  }
+}
+
 final class _SourceWord {
   _SourceWord(this.characters, this.pinyin, this.meaning, this.sourceId);
 
@@ -314,17 +490,9 @@ final class _Source {
   final List<_SourceWord> words;
   final List<_SourceAcknowledgement> acknowledgements;
 
-  static _Source parse(String json) {
+  static _Source parse(String json, _Cedict? cedict) {
     final root = jsonDecode(json) as Map<String, Object?>;
-    final words = [
-      for (final w in _list(root, 'words'))
-        _SourceWord(
-          _string(w, 'characters'),
-          _string(w, 'pinyin'),
-          _string(w, 'meaning'),
-          _optionalString(w, 'source'),
-        ),
-    ];
+    final words = [for (final w in _list(root, 'words')) _word(w, cedict)];
     final acknowledgements = [
       if ((root as Map).containsKey('acknowledgements'))
         for (final a in _list(root, 'acknowledgements'))
@@ -356,6 +524,36 @@ final class _Source {
       throw ContentBuildException('Missing "$key" in ${jsonEncode(map)}');
     }
     return value;
+  }
+
+  /// A Word, its pinyin and meaning taken from CC-CEDICT when it cites it
+  /// and the source does not give them.
+  static _SourceWord _word(Object? w, _Cedict? cedict) {
+    final characters = _string(w, 'characters');
+    final sourceId = _optionalString(w, 'source');
+    var pinyin = _optionalString(w, 'pinyin');
+    var meaning = _optionalString(w, 'meaning');
+    if (sourceId == cedictSourceId && (pinyin == null || meaning == null)) {
+      if (cedict == null) {
+        throw ContentBuildException(
+          'Word "$characters" comes from CC-CEDICT, but no CC-CEDICT file '
+          'was given (--cedict)',
+        );
+      }
+      final entry = cedict.entryFor(
+        characters,
+        _optionalString(w, 'cedictPinyin'),
+      );
+      pinyin ??= entry.markedPinyin;
+      meaning ??= entry.definitions.first;
+    }
+    if (pinyin == null || meaning == null) {
+      throw ContentBuildException(
+        'Word "$characters" needs its "pinyin" and "meaning", or '
+        '"source": "$cedictSourceId" to take them from CC-CEDICT',
+      );
+    }
+    return _SourceWord(characters, pinyin, meaning, sourceId);
   }
 
   static _SourceExercise _exercise(Object? e) {
@@ -507,30 +705,72 @@ final class _Source {
   }
 }
 
-/// Owns permanent Word IDs: once assigned, an ID always means the same Word
-/// and is never given to another one, even after the Word is removed.
-final class _WordIdRegistry {
-  _WordIdRegistry(this._file, this._ids);
+/// Owns permanent IDs (ADR-0001). A Word ID, once assigned, always means
+/// the same Word and is never given to another one, even after the Word is
+/// removed. A Lesson ID, once built, may not silently disappear (a renamed
+/// Lesson would drop Learners' passes): removing one means listing it under
+/// `retiredLessons`, and a retired Lesson ID is never used again.
+final class _IdRegistry {
+  _IdRegistry(this._file, this._wordIds, this._lessons, this._retiredLessons);
 
   final File _file;
-  final Map<String, int> _ids;
+  final Map<String, int> _wordIds;
 
-  static _WordIdRegistry load(File file) {
-    final ids = <String, int>{};
+  /// Every Lesson ID ever built, in first-built order.
+  final List<String> _lessons;
+  final Set<String> _retiredLessons;
+
+  static _IdRegistry load(File file) {
+    final words = <String, int>{};
+    final lessons = <String>[];
+    final retired = <String>{};
     if (file.existsSync()) {
       final root = jsonDecode(file.readAsStringSync()) as Map<String, Object?>;
-      (root['words'] as Map).forEach((k, v) => ids[k as String] = v as int);
+      (root['words'] as Map).forEach((k, v) => words[k as String] = v as int);
+      lessons.addAll((root['lessons'] as List? ?? const []).cast<String>());
+      retired.addAll(
+        (root['retiredLessons'] as List? ?? const []).cast<String>(),
+      );
     }
-    return _WordIdRegistry(file, ids);
+    return _IdRegistry(file, words, lessons, retired);
   }
 
-  int idFor(_SourceWord word) => _ids.putIfAbsent(
+  int idFor(_SourceWord word) => _wordIds.putIfAbsent(
     word.registryKey,
-    () => _ids.values.fold(0, (max, id) => id > max ? id : max) + 1,
+    () => _wordIds.values.fold(0, (max, id) => id > max ? id : max) + 1,
   );
+
+  /// Checks the source's Lesson IDs against every earlier build, then
+  /// records new ones (saved only by [save], after a successful build).
+  void checkLessons(Iterable<String> lessonIds) {
+    final current = lessonIds.toSet();
+    for (final id in current) {
+      if (_retiredLessons.contains(id)) {
+        throw ContentBuildException(
+          'Lesson "$id" was retired and its ID cannot be used again: '
+          'Learners\' old passes would count for it. Give it a new id.',
+        );
+      }
+    }
+    for (final id in _lessons) {
+      if (!current.contains(id) && !_retiredLessons.contains(id)) {
+        throw ContentBuildException(
+          'Lesson "$id" was in an earlier build but is missing now, so '
+          'Learners who passed it would lose that pass. Restore it, or '
+          'retire it on purpose by adding it to "retiredLessons" in '
+          '${_file.path}.',
+        );
+      }
+    }
+    for (final id in current) {
+      if (!_lessons.contains(id)) _lessons.add(id);
+    }
+  }
 
   void save() {
     const encoder = JsonEncoder.withIndent('  ');
-    _file.writeAsStringSync('${encoder.convert({'words': _ids})}\n');
+    _file.writeAsStringSync(
+      '${encoder.convert({'words': _wordIds, 'lessons': _lessons, 'retiredLessons': _retiredLessons.toList()})}\n',
+    );
   }
 }

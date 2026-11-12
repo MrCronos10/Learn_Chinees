@@ -1,0 +1,33 @@
+{
+  "words": {
+    "你好": 1,
+    "谢谢": 2,
+    "再见": 3,
+    "我": 4,
+    "你": 5,
+    "好": 6,
+    "不客气": 7,
+    "对不起": 8,
+    "没关系": 9,
+    "是": 10,
+    "不": 11,
+    "他": 12,
+    "她": 13,
+    "老师": 14,
+    "叫": 15,
+    "名字": 16,
+    "什么": 17,
+    "很": 18,
+    "吗": 19
+  },
+  "lessons": [
+    "u1-tones-and-hello",
+    "u1-thanks-and-goodbye",
+    "u1-who-is-it",
+    "u1-whats-your-name"
+  ],
+  "retiredLessons": [
+    "fixture-lesson-1",
+    "fixture-lesson-2"
+  ]
+}
