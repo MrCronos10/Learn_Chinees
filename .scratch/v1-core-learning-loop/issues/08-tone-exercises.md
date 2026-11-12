@@ -4,11 +4,11 @@
 
 **Blocked by:** 06, 07
 
-**Status:** ready-for-agent (built; one step left, blocked by 07: hear a real Tone Recording on the iOS simulator, then tick the last box and set done)
+**Status:** done
 
 - [x] Hear-a-syllable, pick-the-tone Exercise works
 - [x] See-a-toned-syllable, pick-the-sound Exercise works
-- [ ] Tone audio is played from bundled Tone Recordings via the audio player's recording source
+- [x] Tone audio is played from bundled Tone Recordings via the audio player's recording source
 - [x] Content build fails with a clear message if any tone Exercise has no Tone Recording
 - [x] Tests cover both directions with the fake player and the failing build
 
@@ -25,3 +25,5 @@ As built:
 
 2026-11-11, after code review: a `Tone` enum replaces bare 1–4 ints; Exercises give their own choice and answer labels (`labelFor`, `answerLabel`), so a wrong matching answer names the right sound ("Sound B (má)"). Syllables in the source and the Tone Recordings list must be plain pinyin (lowercase letters with a vowel, no tone mark, v for ü), which also stops a bad entry naming a file outside `tones/`. The build now copies recordings into a staging folder first, so a failed copy leaves the previous database and recordings in place.
 
+
+2026-11-12: The developer played Lesson 1 on the iOS simulator and confirmed the ji and chan Tone Recordings play from the bundle, each in its labelled tone.

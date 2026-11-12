@@ -4,14 +4,14 @@
 
 **Blocked by:** 08, 09
 
-**Status:** ready-for-human (manual play-through)
+**Status:** done
 
 - [x] Word list drafted and reviewed and approved by the developer before building
 - [x] Unit 1 has 4 Lessons along a fixed path; Lesson 1 starts with the four tones
 - [x] Multiple-choice, listening and tone Exercises all appear in the Unit
 - [x] CC-CEDICT, Tatoeba and Tone Recording sources each have an Acknowledgement (Tatoeba left out by decision, see 2026-11-12)
 - [x] Fixture content no longer ships
-- [ ] Manual play-through on the iOS simulator: all 4 Lessons can be passed, Words appear in Review the next Day
+- [x] Manual play-through on the iOS simulator: all 4 Lessons can be passed, Words appear in Review the next Day
 
 ## Comments
 
@@ -37,3 +37,5 @@ Fixed 2026-11-12: wrong meanings now rotate through the Lesson's meanings (the o
 - Lessons 2–4 each end with three tone Exercises mixing ji and chan in both directions, so each Lesson repeats the tone practice.
 - `packages/course_content/test/unit_1_test.dart` checks the shipped `course.db`: 4 Lessons, Lesson 1 opening with all four tones, every Exercise kind present, every Tone Recording bundled, and CC-CEDICT and both speakers acknowledged. It fails if the database is rebuilt without the tone Exercises.
 Left for the developer: listen to the 8 recordings in the app (also closes ticket 08), and play all 4 Lessons on the simulator, then check Review the next Day.
+
+2026-11-12: The developer played all 4 Lessons on the iOS simulator: each can be passed, and their Words appear in Review the next Day. v1 is complete.
