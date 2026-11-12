@@ -559,6 +559,41 @@ void main() {
       ], unorderedEquals(['ma1.mp3', 'ma2.mp3', 'ma3.mp3', 'ma4.mp3']));
     });
 
+    test('never offer the sounds in tone order', () async {
+      final source = File(p.join(dir.path, 'many_tones.json'))
+        ..writeAsStringSync(
+          jsonEncode({
+            'acknowledgements': [ack],
+            'units': [
+              {
+                'id': 'u',
+                'title': 'Unit',
+                'lessons': [
+                  {
+                    'id': 'tones',
+                    'title': 'Tones',
+                    'exercises': [
+                      for (var i = 0; i < 100; i++)
+                        {'kind': 'toneMatching', 'syllable': 'ma', 'tone': 1},
+                    ],
+                  },
+                ],
+              },
+            ],
+            'words': [
+              {'characters': '你好', 'pinyin': 'nǐ hǎo', 'meaning': 'hello'},
+              {'characters': '谢谢', 'pinyin': 'xièxie', 'meaning': 'thanks'},
+            ],
+          }),
+        );
+
+      final content = buildTones(source, recordings());
+
+      for (final exercise in (await content.lesson('tones')).exercises) {
+        expect(exercise.choices, isNot(['1', '2', '3', '4']));
+      }
+    });
+
     test('copy their Tone Recordings next to the database', () {
       buildTones(toneSource(), recordings());
 

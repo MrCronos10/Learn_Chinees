@@ -217,9 +217,15 @@ final _toneChoices = [for (final tone in Tone.values) tone.choice];
 
 /// The four tones in an order that depends only on [key], so a rebuild
 /// keeps it, while the matching sound's position does not give it away.
+/// Never tone order itself (Sound A = 1st tone ... Sound D = 4th tone).
 List<String> _shuffledTones(String key) {
   final seed = key.codeUnits.fold(17, (h, c) => (h * 31 + c) & 0x7fffffff);
-  return List.of(_toneChoices)..shuffle(Random(seed));
+  final random = Random(seed);
+  final tones = List.of(_toneChoices);
+  do {
+    tones.shuffle(random);
+  } while (tones.join() == _toneChoices.join());
+  return tones;
 }
 
 /// Writes to [outputPath] an extract of the CC-CEDICT file at [cedictPath]:

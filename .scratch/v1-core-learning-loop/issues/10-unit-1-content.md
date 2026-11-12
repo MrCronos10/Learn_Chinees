@@ -29,13 +29,18 @@
 Still open: tone Exercises (07/08), the Acknowledgement for Tone Recordings, and the full play-through of all 4 Lessons with Review the next Day.
 
 2026-11-12, after code review: a Word citing CC-CEDICT is always checked against it (even when it gives its own pinyin and meaning), and a build given a CC-CEDICT file must have its Acknowledgement. The Course Content is marked CC BY-SA 4.0 in `content/LICENSE.md`, as the spec's licensing rule requires. ADR-0001 now records that Lesson IDs are permanent too. CC-CEDICT reading moved to `packages/course_content/lib/src/cedict.dart`.
-Fixed 2026-11-12: wrong meanings now rotate through the Lesson's meanings (the ones following the Word, wrapping round), so every meaning is also a wrong choice in other Exercises and none can be spotted by elimination (e.g. "teacher" now appears in four questions, not one).
+Fixed 2026-11-12: wrong meanings now rotate through the Lesson's meanings (the ones following the Word, wrapping round), so every meaning is also a wrong choice in other Exercises and none can be spotted by elimination (e.g. "teacher" now appears in four Exercises, not one).
 
 
 2026-11-12: Tone Exercises added, using the Tone Recordings from ticket 07 (ji and chan only, so they replace the per-Word syllables in `unit-1-word-list.md`):
 - Lesson 1 opens with six tone Exercises on ji: hear-and-pick-the-tone for jī, jì, jí, jǐ (all four tones, not in order so the answer isn't guessable), then see-and-pick-the-sound for jǐ and jī.
-- Lessons 2–4 each end with three tone Exercises mixing ji and chan in both directions, so each Lesson repeats the tone practice.
+- Lessons 2–4 each end with three tone Exercises mixing ji and chan in both directions, so every Lesson has tone Exercises.
 - `packages/course_content/test/unit_1_test.dart` checks the shipped `course.db`: 4 Lessons, Lesson 1 opening with all four tones, every Exercise kind present, every Tone Recording bundled, and CC-CEDICT and both speakers acknowledged. It fails if the database is rebuilt without the tone Exercises.
 Left for the developer: listen to the 8 recordings in the app (also closes ticket 08), and play all 4 Lessons on the simulator, then check Review the next Day.
 
 2026-11-12: The developer played all 4 Lessons on the iOS simulator: each can be passed, and their Words appear in Review the next Day. v1 is complete.
+
+2026-11-12, after the full code review since bda325d:
+- Fixed: a see-and-pick-the-sound Exercise could offer Sounds A–D in tone order (Lesson 2's chān did), so Sound A was always the 1st tone. The builder now never keeps tone order; a builder test checks 100 Exercises.
+- `content/LICENSE.md` lists the Tone Recordings with their own licenses (CC BY 2.0 FR, CC BY-SA 3.0, CC BY-SA 3.0 US) and links all 8 originals.
+- Decided by the developer: Review stays Words-only. Tone Exercises do not enter Review in v1 (as ticket 08 built), although spec story 38 asks for "the same Exercise kinds as Lessons"; tone Exercises in Review can come in v2.
