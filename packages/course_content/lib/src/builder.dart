@@ -572,16 +572,21 @@ final class _Source {
     ),
   );
 
-  /// The Word's meaning plus up to [_distractorCount] other meanings, taken
-  /// first from the same Lesson then from the rest of the Course, sorted so
-  /// the correct answer's position does not give it away.
+  /// The Word's meaning plus up to [_distractorCount] wrong meanings,
+  /// sorted so the answer's position does not give it away. The wrong ones
+  /// are the meanings that follow it in the Lesson, wrapping round, so every
+  /// meaning in the Lesson is also a wrong choice elsewhere and none can be
+  /// spotted by elimination. A Lesson with too few meanings borrows from the
+  /// rest of the Course.
   List<String> choicesFor(_SourceWord word, _SourceLesson lesson) {
-    final lessonMeanings = [
+    final inLesson = {
       for (final e in lesson.exercises)
         if (e.word case final w?) wordFor(w, lesson.id).meaning,
-    ];
+    }.toList();
+    final at = inLesson.indexOf(word.meaning);
     final distractors = <String>{
-      ...lessonMeanings,
+      for (var i = 1; i < inLesson.length; i++)
+        inLesson[(at + i) % inLesson.length],
       ...words.map((w) => w.meaning),
     }..remove(word.meaning);
     return [word.meaning, ...distractors.take(_distractorCount)]..sort();

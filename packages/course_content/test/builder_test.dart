@@ -63,6 +63,47 @@ void main() {
     }
   });
 
+  test('every meaning in a Lesson is also a wrong choice in another of its '
+      'Exercises, so no answer can be spotted by elimination', () async {
+    const meanings = ['one', 'two', 'three', 'four', 'five'];
+    final source = File(p.join(dir.path, 'five.json'))
+      ..writeAsStringSync(
+        jsonEncode({
+          'units': [
+            {
+              'id': 'u',
+              'title': 'Unit',
+              'lessons': [
+                {
+                  'id': 'five',
+                  'title': 'Five Words',
+                  'exercises': [
+                    for (var i = 1; i <= 5; i++)
+                      {'kind': 'multipleChoice', 'word': '字$i'},
+                  ],
+                },
+              ],
+            },
+          ],
+          'words': [
+            for (var i = 1; i <= 5; i++)
+              {'characters': '字$i', 'pinyin': 'zì', 'meaning': meanings[i - 1]},
+          ],
+        }),
+      );
+    final content = build(source.path, 'course.db');
+
+    final exercises = (await content.lesson('five')).exercises;
+
+    for (final exercise in exercises) {
+      expect(exercise.choices, hasLength(4));
+      final elsewhere = exercises
+          .where((e) => e != exercise)
+          .where((e) => e.choices.contains(exercise.answer));
+      expect(elsewhere, isNotEmpty, reason: exercise.answer);
+    }
+  });
+
   test('assigns each Word a distinct permanent Word ID', () async {
     final content = build(fixture, 'course.db');
 
