@@ -64,3 +64,7 @@ Note: 吗 is neutral tone, so it gets no tone Exercise.
 1. Approve, swap or drop any Word? (Candidates kept in reserve: 们 men, 也 yě, 呢 ne, 学生 xuésheng, 中国 Zhōngguó.)
 2. Are the Lesson titles OK?
 3. Is it OK to have 他/她 in one Lesson even though they sound identical?
+
+## Update 2026-11-12: tone syllables
+
+Tone Exercises use **ji** and **chan** instead of the per-Lesson syllables above (ma, ni, hao, xie, zai, jian, shi, bu, ta, jiao, ming), because those are the only syllables with licensed recordings of all four tones in one voice (ticket 07). Lesson 1 opens with jī jí jǐ jì instead of mā má mǎ mà. The Words are unchanged.

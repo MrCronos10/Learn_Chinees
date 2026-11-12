@@ -32,6 +32,36 @@
           "title": "The four tones & hello",
           "exercises": [
             {
+              "kind": "toneIdentification",
+              "syllable": "ji",
+              "tone": 1
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "ji",
+              "tone": 4
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "ji",
+              "tone": 2
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "ji",
+              "tone": 3
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "ji",
+              "tone": 3
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "ji",
+              "tone": 1
+            },
+            {
               "kind": "multipleChoice",
               "word": "你"
             },
@@ -84,6 +114,21 @@
             {
               "kind": "listening",
               "word": "再见"
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "chan",
+              "tone": 2
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "chan",
+              "tone": 4
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "chan",
+              "tone": 1
             }
           ]
         },
@@ -118,6 +163,21 @@
             {
               "kind": "listening",
               "word": "老师"
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "ji",
+              "tone": 3
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "chan",
+              "tone": 3
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "chan",
+              "tone": 1
             }
           ]
         },
@@ -152,6 +212,21 @@
             {
               "kind": "listening",
               "word": "什么"
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "ji",
+              "tone": 2
+            },
+            {
+              "kind": "toneIdentification",
+              "syllable": "chan",
+              "tone": 3
+            },
+            {
+              "kind": "toneMatching",
+              "syllable": "chan",
+              "tone": 4
             }
           ]
         }
