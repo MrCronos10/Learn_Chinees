@@ -358,24 +358,28 @@ void main() {
               ),
         );
 
-    const cedict =
-        '{ "id": "cc-cedict", "name": "CC-CEDICT", "author": "MDBG", '
-        '"license": "CC BY-SA 4.0", "url": "https://cc-cedict.org/" }';
+    // A made-up third-party source: the rule holds for any source.
+    const dictionary =
+        '{ "id": "a-dictionary", "name": "A Dictionary", "author": "Someone", '
+        '"license": "CC BY-SA 4.0", "url": "https://example.org/" }';
 
     test('are listed from the Course Content', () async {
-      final content = build(sourceWith('cc-cedict', cedict).path, 'course.db');
+      final content = build(
+        sourceWith('a-dictionary', dictionary).path,
+        'course.db',
+      );
 
       final acknowledgements = await content.acknowledgements();
 
-      expect(acknowledgements.single.name, 'CC-CEDICT');
-      expect(acknowledgements.single.author, 'MDBG');
+      expect(acknowledgements.single.name, 'A Dictionary');
+      expect(acknowledgements.single.author, 'Someone');
       expect(acknowledgements.single.license, 'CC BY-SA 4.0');
-      expect(acknowledgements.single.url, 'https://cc-cedict.org/');
+      expect(acknowledgements.single.url, 'https://example.org/');
     });
 
     test('the build fails when a source has no Acknowledgement', () {
       expect(
-        () => build(sourceWith('tatoeba', cedict).path, 'course.db'),
+        () => build(sourceWith('tatoeba', dictionary).path, 'course.db'),
         throwsA(
           isA<ContentBuildException>().having(
             (e) => e.message,
@@ -387,10 +391,13 @@ void main() {
     });
 
     test('the build fails when an Acknowledgement has no license', () {
-      final noLicense = cedict.replaceFirst('"license": "CC BY-SA 4.0", ', '');
+      final noLicense = dictionary.replaceFirst(
+        '"license": "CC BY-SA 4.0", ',
+        '',
+      );
 
       expect(
-        () => build(sourceWith('cc-cedict', noLicense).path, 'course.db'),
+        () => build(sourceWith('a-dictionary', noLicense).path, 'course.db'),
         throwsA(
           isA<ContentBuildException>().having(
             (e) => e.message,
@@ -655,7 +662,7 @@ void main() {
 ''');
     });
 
-    /// One Lesson studying [words], each given as its source entry.
+    /// One Lesson studying [words], each written as in a source file.
     File sourceWith(List<Map<String, Object>> words) =>
         File(p.join(dir.path, 'cedict_source.json'))..writeAsStringSync(
           jsonEncode({
@@ -831,6 +838,39 @@ void main() {
           outputPath: p.join(dir.path, 'x.db'),
         ),
         failsWith(['你好', 'CC-CEDICT']),
+      );
+    });
+
+    test('a Word citing CC-CEDICT must be in it, even when it gives its own '
+        'pinyin and meaning', () {
+      expect(
+        () => wordsBuiltFrom(
+          sourceWith([
+            {
+              'characters': '字典里没有',
+              'source': 'cc-cedict',
+              'pinyin': 'zì',
+              'meaning': 'made up',
+            },
+            {'characters': '女', 'source': 'cc-cedict'},
+          ]),
+        ),
+        failsWith(['字典里没有', 'CC-CEDICT']),
+      );
+    });
+
+    test('a build given a CC-CEDICT file needs its Acknowledgement', () {
+      final source = File(p.join(dir.path, 'no_ack.json'))
+        ..writeAsStringSync(File(fixture).readAsStringSync());
+
+      expect(
+        () => buildCourseContent(
+          sourcePath: source.path,
+          registryPath: registry,
+          outputPath: p.join(dir.path, 'x.db'),
+          cedictPath: cedict.path,
+        ),
+        failsWith(['cc-cedict', 'Acknowledgement']),
       );
     });
 

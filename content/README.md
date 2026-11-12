@@ -1,10 +1,12 @@
 # Course Content sources
 
+Licensed CC BY-SA 4.0 (see `LICENSE.md`), because it is built from CC-CEDICT.
+
 The app ships one read-only Course Content database, `app/assets/content/course.db`, built from these files. Rebuild it after any change here and commit the result.
 
 | File | What it is |
 |---|---|
-| `ids.json` | ID registry of Words and Lessons (ADR-0001). The builder adds new IDs; never edit or remove existing ones. To remove a Lesson on purpose, add its id to `retiredLessons`. A retired id can never be used again. |
+| `ids.json` | ID registry of Words and Lessons (ADR-0001, including its Lesson ID addition). The builder adds new IDs; never edit or remove existing ones. To remove a Lesson on purpose, add its id to `retiredLessons`. A retired id can never be used again. |
 | `unit-1/source.json` | Unit 1: Lessons, Exercises, Words and Acknowledgements. A Word with `"source": "cc-cedict"` takes its pinyin and first meaning from CC-CEDICT unless it gives its own; `cedictPinyin` (e.g. `"ma5"`) picks a reading when there are several. |
 | `unit-1/cedict_extract.u8` | The CC-CEDICT entries Unit 1 uses, unchanged, with CC-CEDICT's license header (CC BY-SA 4.0). |
 

@@ -28,3 +28,6 @@
 - Checked on the iOS simulator: the Lesson path shows the 4 Unit 1 Lessons in order; existing Learner Progress (XP, Streak) survived the content replacement.
 Still open: tone Exercises (07/08), the Acknowledgement for Tone Recordings, and the full play-through of all 4 Lessons with Review the next Day.
 
+2026-11-12, after code review: a Word citing CC-CEDICT is always checked against it (even when it gives its own pinyin and meaning), and a build given a CC-CEDICT file must have its Acknowledgement. The Course Content is marked CC BY-SA 4.0 in `content/LICENSE.md`, as the spec's licensing rule requires. ADR-0001 now records that Lesson IDs are permanent too. CC-CEDICT reading moved to `packages/course_content/lib/src/cedict.dart`.
+Follow-up (not fixed): a multiple-choice Exercise's wrong meanings are the first three other meanings in its Lesson, so a Word late in a Lesson (e.g. 老师) can be the only Exercise showing its meaning, which a Learner could spot by elimination.
+
