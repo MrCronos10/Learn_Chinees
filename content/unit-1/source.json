@@ -6,6 +6,20 @@
       "author": "MDBG and the CC-CEDICT contributors",
       "license": "CC BY-SA 4.0",
       "url": "https://cc-cedict.org/wiki/"
+    },
+    {
+      "id": "shtooka-wei-gao",
+      "name": "Tone Recordings of jī jí jǐ jì (The Shtooka Project, via Wikimedia Commons; converted to AAC)",
+      "author": "Wei Gao, Vion Nicolas",
+      "license": "CC BY 2.0 FR",
+      "url": "https://commons.wikimedia.org/wiki/File:Zh-jī.ogg"
+    },
+    {
+      "id": "shtooka-yue-tan",
+      "name": "Tone Recordings of chān chán chǎn chàn (The Shtooka Project, via Wikimedia Commons; converted to AAC)",
+      "author": "Yue Tan",
+      "license": "CC BY-SA 3.0 (chǎn: CC BY-SA 3.0 US)",
+      "url": "https://commons.wikimedia.org/wiki/File:Zh-chān.ogg"
     }
   ],
   "units": [

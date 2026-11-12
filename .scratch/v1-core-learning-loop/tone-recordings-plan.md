@@ -92,3 +92,7 @@ mīng míng mǐng mìng
 ## 4. Closing ticket 07
 
 Tick its boxes when: the source is chosen, its license is confirmed in writing (or the recordings are your own), the Acknowledgement details above are filled in, and all 48 files from section 1 exist.
+
+## Update 2026-11-12: source settled (ticket 07)
+
+The 12-syllable plan above is on hold. Ticket 07 closed with The Shtooka Project recordings from Wikimedia Commons, which cover only **ji** and **chan** in one voice each (8 recordings, in `content/unit-1/tones/`, listed in `content/unit-1/tone_recordings.json`). Unit 1's tone Exercises use those two syllables. Sections 3a and 3b still apply if Tone Perfect or own recordings are added later to cover more syllables.

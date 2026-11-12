@@ -1,0 +1,12 @@
+{
+  "recordings": [
+    { "syllable": "ji", "tone": 1, "file": "tones/ji1.m4a", "source": "shtooka-wei-gao" },
+    { "syllable": "ji", "tone": 2, "file": "tones/ji2.m4a", "source": "shtooka-wei-gao" },
+    { "syllable": "ji", "tone": 3, "file": "tones/ji3.m4a", "source": "shtooka-wei-gao" },
+    { "syllable": "ji", "tone": 4, "file": "tones/ji4.m4a", "source": "shtooka-wei-gao" },
+    { "syllable": "chan", "tone": 1, "file": "tones/chan1.m4a", "source": "shtooka-yue-tan" },
+    { "syllable": "chan", "tone": 2, "file": "tones/chan2.m4a", "source": "shtooka-yue-tan" },
+    { "syllable": "chan", "tone": 3, "file": "tones/chan3.m4a", "source": "shtooka-yue-tan" },
+    { "syllable": "chan", "tone": 4, "file": "tones/chan4.m4a", "source": "shtooka-yue-tan" }
+  ]
+}
